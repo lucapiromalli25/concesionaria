@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestión de Modelos{% endblock %}
+
+{% block body %}
+<div class="page-header"><h3 class="fw-bold mb-3">Gestión de Modelos</h3></div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Listado de Modelos</h4>
+                    <button id="btn-nuevo-modelo" class="btn btn-primary btn-round ms-auto">
+                        <i class="fa fa-plus"></i> Agregar Modelo
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabla-modelos">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Nombre del Modelo</th>
+                                <th>Marca</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for modelo in modelos %}
+                            <tr data-id="{{ modelo.id }}">
+                                <td>{{ modelo.id }}</td>
+                                <td class="modelo-name">{{ modelo.name }}</td>
+                                <td class="marca-name">{{ modelo.marca.name }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-warning btn-sm btn-editar">Editar</button>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr id="fila-sin-modelos"><td colspan="4" class="text-center">No se encontraron modelos</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="formModalLabel">Nuevo Modelo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modal-body-content"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const formModal = new bootstrap.Modal(document.getElementById('formModal'));
+        const modalBody = document.getElementById('modal-body-content');
+        const modalTitle = document.getElementById('formModalLabel');
+        const tablaBody = document.querySelector('#tabla-modelos tbody');
+
+        // Abrir modal para CREAR
+        document.getElementById('btn-nuevo-modelo').addEventListener('click', function() {
+            modalTitle.textContent = 'Nuevo Modelo';
+            fetch('{{ path('app_modelos_new') }}')
+                .then(response => response.text()).then(html => {
+                    modalBody.innerHTML = html;
+                    formModal.show();
+                    $('#formModal .form-select').select2({
+                        dropdownParent: $('#formModal') // Importante para que el buscador funcione dentro del modal
+                    });
+                    attachFormSubmitListener();
+                });
+        });
+
+        // Abrir modal para EDITAR
+        tablaBody.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('btn-editar')) {
+                const row = e.target.closest('tr');
+                const modeloId = row.dataset.id;
+                modalTitle.textContent = `Editar Modelo #${modeloId}`;
+                const url = `{{ path('app_modelos_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', modeloId);
+
+                fetch(url).then(response => response.text()).then(html => {
+                    modalBody.innerHTML = html;
+                    formModal.show();
+                    $('#formModal .form-select').select2({
+                        dropdownParent: $('#formModal') // Importante para que el buscador funcione dentro del modal
+                    });
+                    attachFormSubmitListener();
+                });
+            }
+        });
+
+        function attachFormSubmitListener() {
+            const form = document.getElementById('formModelo');
+            if (!form) return;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const submitButton = form.querySelector('button[type="submit"]');
+                const spinner = submitButton.querySelector('.spinner-border');
+                spinner.classList.remove('d-none');
+                submitButton.disabled = true;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                        const esEdicion = form.action.includes('/edit');
+                        if (esEdicion) {
+                            const rowToUpdate = tablaBody.querySelector(`tr[data-id="${data.modelo.id}"]`);
+                            if (rowToUpdate) {
+                                rowToUpdate.querySelector('.modelo-name').textContent = data.modelo.name;
+                                rowToUpdate.querySelector('.marca-name').textContent = data.modelo.marca.name;
+                            }
+                        } else {
+                            const filaVacia = document.getElementById('fila-sin-modelos');
+                            if (filaVacia) {
+                                filaVacia.remove();
+                            }
+
+                            const newRow = `
+                                <tr data-id="${data.modelo.id}">
+                                    <td>${data.modelo.id}</td>
+                                    <td class="modelo-name">${data.modelo.name}</td>
+                                    <td class="marca-name">${data.modelo.marca.name}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-warning btn-sm btn-editar">Editar</button>
+                                    </td>
+                                </tr>`;
+                            tablaBody.insertAdjacentHTML('beforeend', newRow);
+                        }
+                        formModal.hide();
+                    } else {
+                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message},{type: 'danger'});
+                        // Aquí iría la lógica para mostrar errores de campo si es necesario
+                    }
+                })
+                .catch(error => console.error('Error:', error))
+                .finally(() => {
+                    spinner.classList.add('d-none');
+                    submitButton.disabled = false;
+                });
+            });
+        }
+    });
+    </script>
+{% endblock %}

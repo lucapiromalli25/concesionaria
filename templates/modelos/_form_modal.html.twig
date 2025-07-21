@@ -1,0 +1,22 @@
+{% set form_action = form.vars.value.id ? path('app_modelos_edit', {'id': form.vars.value.id}) : path('app_modelos_new') %}
+
+{{ form_start(form, {'action': form_action, 'attr': {'id': 'formModelo'}}) }}
+    <div class="form-group">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name, {'attr': {'class': 'form-control', 'placeholder': 'Ej: Ranger'}}) }}
+        <div class="text-danger form-error-message mt-1">{{ form_errors(form.name) }}</div>
+    </div>
+    <div class="form-group">
+        {{ form_label(form.marca) }}
+        {{ form_widget(form.marca, {'attr': {'class': 'form-select form-select-lg'}}) }}
+        <div class="text-danger form-error-message mt-1">{{ form_errors(form.marca) }}</div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Guardar
+        </button>
+    </div>
+{{ form_end(form) }}

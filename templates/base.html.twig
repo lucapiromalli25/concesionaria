@@ -1,17 +1,245 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+<html lang="es">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+		<title>
+			{% block title %}Kaiadmin - Dashboard
+			{% endblock %}
+		</title>
+		<meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport"/>
+		<link rel="icon" href="{{ asset('assets/img/kaiadmin/favicon.ico') }}" type="image/x-icon"/>
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
-    </head>
-    <body>
-        {% block body %}{% endblock %}
-    </body>
+		<script src="{{ asset('assets/js/plugin/webfont/webfont.min.js') }}"></script>
+		<script>
+			WebFont.load({
+				google: {
+					"families": ["Public Sans:300,400,500,600,700"]
+				},
+				custom: {
+					"families": [
+						"Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"
+					],
+					urls: ['{{ asset('assets/css/fonts.min.css') }}']
+				},
+				active: function () {
+					sessionStorage.fonts = true;
+				}
+			});
+		</script>
+
+		{% block stylesheets %}
+			<link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
+			<link rel="stylesheet" href="{{ asset('assets/css/plugins.min.css') }}">
+			<link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.min.css') }}">
+			<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+		{% endblock %}
+	</head>
+	<body>
+		<div class="wrapper">
+			<div class="sidebar" data-background-color="dark">
+				<div class="sidebar-logo">
+					<div class="logo-header" data-background-color="dark">
+						<a
+							href="#" class="logo">
+							{# Cambia 'app_home' a tu ruta principal #}
+							<img src="{{ asset('assets/img/kaiadmin/logo_light.svg') }}" alt="navbar brand" class="navbar-brand" height="20">
+						</a>
+						<div class="nav-toggle">
+							<button class="btn btn-toggle toggle-sidebar">
+								<i class="gg-menu-right"></i>
+							</button>
+							<button class="btn btn-toggle sidenav-toggler">
+								<i class="gg-menu-left"></i>
+							</button>
+						</div>
+						<button class="topbar-toggler more">
+							<i class="gg-more-vertical-alt"></i>
+						</button>
+					</div>
+				</div>
+				<div class="sidebar-wrapper scrollbar scrollbar-inner">
+					<div class="sidebar-content">
+						<ul
+							class="nav nav-secondary">
+							{# EJEMPLO DE LINK NORMAL #}
+							<li class="nav-item">
+								<a
+									href="#" class="nav-link">
+									{# Cambia 'app_home' a tu ruta principal #}
+									<i class="fas fa-home"></i>
+									<p>Dashboard</p>
+								</a>
+							</li>
+							<li class="nav-section">
+								<span class="sidebar-mini-icon">
+									<i class="fa fa-ellipsis-h"></i>
+								</span>
+								<h4 class="text-section">Módulos</h4>
+							</li>
+
+							{# EJEMPLO DE LINK CON SUBMENÚ Y PROTEGIDO POR ROL #}
+							{% if is_granted('ROLE_ADMIN') %}
+								<li class="nav-item">
+									<a data-bs-toggle="collapse" href="#configuracion">
+										<i class="fas fa-cogs"></i>
+										<p>Configuración</p>
+										<span class="caret"></span>
+									</a>
+									<div class="collapse" id="configuracion">
+										<ul class="nav nav-collapse">
+											<li>
+												<a href="{{ path('app_marca_index') }}">
+													<span class="sub-item">Marcas</span>
+												</a>
+											</li>
+											<li>
+												<a href="{{ path('app_modelos_index') }}">
+													<span class="sub-item">Modelos</span>
+												</a>
+											</li>
+											<li>
+												<a href="{{ path('app_versiones_index') }}">
+													<span class="sub-item">Versiones</span>
+												</a>
+											</li>
+											{# Aquí irán los futuros links como Versiones, etc. #}
+										</ul>
+									</div>
+								</li>
+							{% endif %}
+
+							{# EJEMPLO DE LINK SIMPLE PARA USUARIO LOGUEADO #}
+							{#{% if is_granted('ROLE_USER') %}#}
+								<li class="nav-item"> <a
+									href="#">
+									{# Reemplazar con path('app_productos_index') #}
+									<i class="fas fa-box"></i>
+									<p>Mis Productos</p>
+								</a>
+							</li>
+							{#{% endif %}#}
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="main-panel">
+				<div class="main-header">
+					<div class="main-header-logo">
+						<div class="logo-header" data-background-color="dark">
+							<a
+								href="#" class="logo">
+								{# Cambia 'app_home' a tu ruta principal #}
+								<img src="{{ asset('assets/img/kaiadmin/logo_light.svg') }}" alt="navbar brand" class="navbar-brand" height="20">
+							</a>
+							<div class="nav-toggle">
+								<button class="btn btn-toggle toggle-sidebar">
+									<i class="gg-menu-right"></i>
+								</button>
+								<button class="btn btn-toggle sidenav-toggler">
+									<i class="gg-menu-left"></i>
+								</button>
+							</div>
+							<button class="topbar-toggler more">
+								<i class="gg-more-vertical-alt"></i>
+							</button>
+						</div>
+					</div>
+					<nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
+						<div class="container-fluid">
+							<ul
+								class="navbar-nav topbar-nav ms-md-auto align-items-center">
+								{# Dentro de <ul class="navbar-nav topbar-nav ms-md-auto align-items-center"> #}
+								{% if app.user %}
+									<li class="nav-item topbar-user dropdown hidden-caret">
+										<a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
+											<div class="avatar-sm">
+												<img src="{{ asset('assets/img/profile.jpg') }}" alt="..." class="avatar-img rounded-circle">
+											</div>
+											<span class="profile-username">
+												<span class="op-7">Hola,</span>
+												<span class="fw-bold">{{ app.user.completeName }}</span>
+											</span>
+										</a>
+										<ul class="dropdown-menu dropdown-user animated fadeIn">
+											<div class="dropdown-user-scroll scrollbar-outer">
+												<li>
+													<div class="user-box">
+														<div class="avatar-lg"><img src="{{ asset('assets/img/profile.jpg') }}" alt="image profile" class="avatar-img rounded"></div>
+														<div class="u-text">
+															<h4>{{ app.user.completeName }}</h4>
+															<p class="text-muted">{{ app.user.email }}</p>
+														</div>
+													</div>
+												</li>
+												<li>
+													<div class="dropdown-divider"></div>
+													<a class="dropdown-item" href="{{ path('app_logout') }}">Cerrar Sesión</a>
+												</li>
+											</div>
+										</ul>
+									</li>
+								{% else %}
+									<li class="nav-item">
+										<a href="{{ path('app_login') }}" class="btn btn-primary btn-sm">Iniciar Sesión</a>
+									</li>
+									<li class="nav-item ms-2">
+										<a href="{{ path('app_register') }}" class="btn btn-secondary btn-sm">Registrarse</a>
+									</li>
+								{% endif %}
+							</ul>
+						</div>
+					</nav>
+				</div>
+
+				<div class="container">
+					<div
+						class="page-inner">
+						{# AQUÍ SE CARGARÁ EL CONTENIDO PRINCIPAL DE CADA PÁGINA #}
+						{% block body %}{% endblock %}
+					</div>
+				</div>
+
+				<footer class="footer">
+					<div class="container-fluid">
+						<nav class="pull-left">
+							<ul class="nav">
+								<li class="nav-item">
+									<a class="nav-link" href="#">Ayuda</a>
+								</li>
+							</ul>
+						</nav>
+						<div class="copyright ms-auto">
+							2024, made with
+							<i class="fa fa-heart heart text-danger"></i>
+							by
+							<a href="#">Tu Nombre</a>
+						</div>
+					</div>
+				</footer>
+			</div>
+		</div>
+		{% block javascripts %}
+			<script src="{{ asset('assets/js/core/jquery-3.7.1.min.js') }}"></script>
+			<script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
+			<script src="{{ asset('assets/js/core/bootstrap.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/chart.js/chart.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/chart-circle/circles.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
+
+			<script src="{{ asset('assets/js/plugin/sweetalert/sweetalert.min.js') }}"></script>
+			
+			<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+			<script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>
+		{% endblock %}
+	</body>
 </html>
