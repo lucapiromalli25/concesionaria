@@ -1,0 +1,28 @@
+{% use "bootstrap_5_layout.html.twig" %}
+
+{# Bloque principal para cada fila del formulario (label + input) #}
+{# Esto asegura que cada campo esté envuelto en un <div class="form-group"> que Kaiadmin necesita para el espaciado. #}
+{%- block form_row -%}
+    <div class="form-group">
+        {{- form_label(form) -}}
+        {{- form_widget(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock form_row -%}
+
+{# Bloque para los errores, para que se muestren con el estilo correcto #}
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <div class="text-danger form-error-message mt-1" data-field-error="{{ name }}">
+            {%- for error in errors -%}
+                <small>{{ error.message }}</small>
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endblock form_errors -%}
+
+{# Bloque para asegurar que los <select> tengan la clase .form-select #}
+{%- block choice_widget_collapsed -%}
+    {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' form-select')|trim}) -%}
+    {{- parent() -}}
+{%- endblock choice_widget_collapsed -%}

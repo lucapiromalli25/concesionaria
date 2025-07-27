@@ -67,12 +67,12 @@ class Vehiculos
         return $this->id;
     }
 
-    public function getVersionId(): ?Versiones
+    public function getVersion(): ?Versiones
     {
         return $this->version;
     }
 
-    public function setVersionId(?Versiones $version): static
+    public function setVersion(?Versiones $version): static
     {
         $this->version = $version;
 

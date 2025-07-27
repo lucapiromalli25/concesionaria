@@ -1,0 +1,25 @@
+{% set form_action = form.vars.value.id ? path('app_vehiculos_edit', {'id': form.vars.value.id}) : path('app_vehiculos_new') %}
+
+{{ form_start(form, {'action': form_action, 'attr': {'id': 'formVehiculo'}}) }}
+    
+    {{ form_row(form.version, {'attr': {'class': 'form-select-lg'}}) }}
+    <div class="row">
+        <div class="col-sm-6">{{ form_row(form.anio) }}</div>
+        <div class="col-sm-6">{{ form_row(form.color) }}</div>
+        <div class="col-sm-6">{{ form_row(form.chassis_number) }}</div>
+        <div class="col-sm-6">{{ form_row(form.engine_number) }}</div>
+        <div class="col-sm-6">{{ form_row(form.kilometers) }}</div>
+        <div class="col-sm-6">{{ form_row(form.state) }}</div>
+        <div class="col-sm-6">{{ form_row(form.entry_date) }}</div>
+        <div class="col-sm-6">{{ form_row(form.purchase_price) }}</div>
+    </div>
+    {{ form_row(form.suggested_retail_price) }}
+    {{ form_row(form.internal_observations) }}
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> Guardar
+        </button>
+    </div>
+{{ form_end(form) }}
