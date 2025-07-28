@@ -32,6 +32,13 @@
 			<link rel="stylesheet" href="{{ asset('assets/css/plugins.min.css') }}">
 			<link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.min.css') }}">
 			<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+			<style> 
+				.modal-underlay {
+					opacity: 0.4;
+					filter: blur(2px);
+					transition: all 0.2s ease-in-out;
+				}
+			</style>>
 		{% endblock %}
 	</head>
 	<body>
@@ -106,6 +113,12 @@
 												<a href="{{ path('app_vehiculos_index') }}">
 													<i class="fas fa-car"></i>
 													<p>Vehículos</p>
+												</a>
+											</li>
+											<li class="nav-item">
+												<a href="{{ path('app_clientes_index') }}">
+													<i class="fas fa-users"></i>
+													<p>Clientes</p>
 												</a>
 											</li>
 											{# Aquí irán los futuros links como Versiones, etc. #}

@@ -7,6 +7,7 @@ use App\Form\ModelosType;
 use App\Repository\ModelosRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface; // <-- Añade este import
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,18 +43,16 @@ class ModelosController extends AbstractController
             $entityManager->flush();
 
             if ($request->isXmlHttpRequest()) {
-                return new JsonResponse([
-                    'status' => 'success',
-                    'message' => 'Modelo creado correctamente.',
-                    'modelo' => [
-                        'id' => $modelo->getId(),
-                        'name' => $modelo->getName(),
-                        'marca' => ['name' => $modelo->getMarca()->getName()]
-                    ]
-                ]);
+                return $this->getSuccessJsonResponse($modelo, 'Modelo creado correctamente.');
             }
             return $this->redirectToRoute('app_modelos_index', [], Response::HTTP_SEE_OTHER);
         }
+
+        // --- BLOQUE AÑADIDO ---
+        if ($form->isSubmitted() && !$form->isValid() && $request->isXmlHttpRequest()) {
+            return new JsonResponse(['status' => 'error', 'message' => 'El formulario contiene errores.', 'errors' => $this->getFormErrors($form)], Response::HTTP_BAD_REQUEST);
+        }
+        // --- FIN DEL BLOQUE AÑADIDO ---
 
         return $this->render('modelos/_form_modal.html.twig', [
             'modelo' => $modelo,
@@ -68,28 +67,58 @@ class ModelosController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
             $modelo->setUpdatedBy($this->getUser());
             $modelo->setUpdatedAt(new \DateTimeImmutable());
             $entityManager->flush();
 
             if ($request->isXmlHttpRequest()) {
-                return new JsonResponse([
-                    'status' => 'success',
-                    'message' => 'Modelo actualizado correctamente.',
-                    'modelo' => [
-                        'id' => $modelo->getId(),
-                        'name' => $modelo->getName(),
-                        'marca' => ['name' => $modelo->getMarca()->getName()]
-                    ]
-                ]);
+                return $this->getSuccessJsonResponse($modelo, 'Modelo actualizado correctamente.');
             }
             return $this->redirectToRoute('app_modelos_index', [], Response::HTTP_SEE_OTHER);
         }
+
+        // --- BLOQUE AÑADIDO ---
+        if ($form->isSubmitted() && !$form->isValid() && $request->isXmlHttpRequest()) {
+            return new JsonResponse(['status' => 'error', 'message' => 'El formulario contiene errores.', 'errors' => $this->getFormErrors($form)], Response::HTTP_BAD_REQUEST);
+        }
+        // --- FIN DEL BLOQUE AÑADIDO ---
 
         return $this->render('modelos/_form_modal.html.twig', [
             'modelo' => $modelo,
             'form' => $form->createView(),
         ]);
     }
+    
+    // --- MÉTODO AUXILIAR AÑADIDO ---
+    private function getFormErrors(FormInterface $form): array
+    {
+        $errors = [];
+        foreach ($form->getErrors(true) as $error) {
+            $errors[$error->getOrigin()->getName()][] = $error->getMessage();
+        }
+        foreach ($form as $child) {
+            if (!$child->isValid()) {
+                foreach ($child->getErrors(true) as $error) {
+                    $errors[$child->getName()][] = $error->getMessage();
+                }
+            }
+        }
+        return $errors;
+    }
+    
+    // --- MÉTODO AUXILIAR ACTUALIZADO ---
+    private function getSuccessJsonResponse(Modelos $modelo, string $message): JsonResponse
+{
+    return new JsonResponse([
+        'status' => 'success',
+        'message' => $message,
+        'modelo' => [
+            'id' => $modelo->getId(),
+            'name' => $modelo->getName(),
+            'marca' => ['name' => $modelo->getMarca()->getName()],
+            // AÑADE ESTA LÍNEA
+            'displayText' => $modelo->getMarca()->getName() . ' - ' . $modelo->getName()
+        ]
+    ]);
+}
 }

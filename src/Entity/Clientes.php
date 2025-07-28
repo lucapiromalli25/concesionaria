@@ -49,24 +49,24 @@ class Clientes
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getFirstName(): ?string
     {
         return $this->first_name;
     }
 
-    public function setName(string $first_name): static
+    public function setFirstName(string $first_name): static
     {
         $this->first_name = $first_name;
 
         return $this;
     }
 
-    public function getUsername(): ?string
+    public function getLastName(): ?string
     {
         return $this->last_name;
     }
 
-    public function setUsername(string $last_name): static
+    public function setLastName(string $last_name): static
     {
         $this->last_name = $last_name;
 

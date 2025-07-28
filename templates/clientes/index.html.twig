@@ -1,0 +1,150 @@
+{% extends 'base.html.twig' %}
+{% block title %}Gestión de Clientes{% endblock %}
+
+{% block body %}
+<div class="page-header"><h3 class="fw-bold mb-3">Gestión de Clientes</h3></div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Listado de Clientes</h4>
+                    <button id="btn-nuevo-cliente" class="btn btn-primary btn-round ms-auto">
+                        <i class="fa fa-plus"></i> Agregar Cliente
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabla-clientes">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre Completo</th>
+                                <th>Documento</th>
+                                <th>Teléfono</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for cliente in clientes %}
+                            <tr data-id="{{ cliente.id }}">
+                                <td>{{ cliente.id }}</td>
+                                <td class="cliente-name">{{ cliente.firstName }} {{ cliente.lastName }}</td>
+                                <td class="cliente-document">{{ cliente.documentNumber }}</td>
+                                <td class="cliente-phone">{{ cliente.phone }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-warning btn-sm btn-editar">Editar</button>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr id="fila-sin-clientes"><td colspan="5" class="text-center">No se encontraron clientes</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="formModalLabel">Nuevo Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modal-body-content"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const formModal = new bootstrap.Modal(document.getElementById('formModal'));
+        const modalBody = document.getElementById('modal-body-content');
+        const modalTitle = document.getElementById('formModalLabel');
+        const tablaBody = document.querySelector('#tabla-clientes tbody');
+
+        document.getElementById('btn-nuevo-cliente').addEventListener('click', function() {
+            modalTitle.textContent = 'Nuevo Cliente';
+            fetch('{{ path('app_clientes_new') }}')
+                .then(r => r.text()).then(html => {
+                    modalBody.innerHTML = html;
+                    formModal.show();
+                    attachFormSubmitListener();
+                });
+        });
+
+        tablaBody.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('btn-editar')) {
+                const row = e.target.closest('tr');
+                const clienteId = row.dataset.id;
+                modalTitle.textContent = `Editar Cliente #${clienteId}`;
+                const url = `{{ path('app_clientes_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', clienteId);
+                fetch(url).then(r => r.text()).then(html => {
+                    modalBody.innerHTML = html;
+                    formModal.show();
+                    attachFormSubmitListener();
+                });
+            }
+        });
+
+        function attachFormSubmitListener() {
+            const form = document.getElementById('formCliente');
+            if (!form) return;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                // ... Lógica de spinner, fetch, y manejo de errores (idéntica a la de los CRUDs anteriores)
+                const submitButton = form.querySelector('button[type="submit"]');
+                const spinner = submitButton.querySelector('.spinner-border');
+                spinner.classList.remove('d-none');
+                submitButton.disabled = true;
+                form.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
+
+                fetch(form.action, { method: 'POST', body: new FormData(form), headers: {'X-Requested-With': 'XMLHttpRequest'} })
+                .then(response => { if (!response.ok) { return response.json().then(err => Promise.reject(err)); } return response.json(); })
+                .then(data => {
+                    if (data.status === 'success') {
+                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                        if (form.action.includes('/edit')) {
+                            updateTableRow(data.cliente);
+                        } else {
+                            addTableRow(data.cliente);
+                        }
+                        formModal.hide();
+                    }
+                })
+                .catch(errorData => { /* ... Manejo de errores ... */ })
+                .finally(() => { spinner.classList.add('d-none'); submitButton.disabled = false; });
+            });
+        }
+
+        function updateTableRow(cliente) {
+            const row = tablaBody.querySelector(`tr[data-id="${cliente.id}"]`);
+            if (row) {
+                row.querySelector('.cliente-name').textContent = `${cliente.first_name} ${cliente.last_name}`;
+                row.querySelector('.cliente-document').textContent = cliente.document_number;
+                row.querySelector('.cliente-phone').textContent = cliente.phone;
+            }
+        }
+
+        function addTableRow(cliente) {
+            document.getElementById('fila-sin-clientes')?.remove();
+            const newRowHtml = `
+                <tr data-id="${cliente.id}">
+                    <td>${cliente.id}</td>
+                    <td class="cliente-name">${cliente.first_name} ${cliente.last_name}</td>
+                    <td class="cliente-document">${cliente.document_number}</td>
+                    <td class="cliente-phone">${cliente.phone}</td>
+                    <td class="text-end"><button class="btn btn-warning btn-sm btn-editar">Editar</button></td>
+                </tr>`;
+            tablaBody.insertAdjacentHTML('afterbegin', newRowHtml); // afterbegin para mostrarlo primero
+        }
+    });
+    </script>
+{% endblock %}

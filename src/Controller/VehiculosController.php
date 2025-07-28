@@ -94,7 +94,7 @@ class VehiculosController extends AbstractController
             'message' => $message,
             'vehiculo' => [
                 'id' => $vehiculo->getId(),
-                'ano' => $vehiculo->getAnio(),
+                'anio' => $vehiculo->getAnio(),
                 'color' => $vehiculo->getColor(),
                 'precio_venta_sugerido' => $vehiculo->getSuggestedRetailPrice(),
                 'version' => ['name' => $version->getName()],

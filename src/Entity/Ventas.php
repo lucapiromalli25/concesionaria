@@ -55,24 +55,24 @@ class Ventas
         return $this->id;
     }
 
-    public function getVehiculoId(): ?Vehiculos
+    public function getVehiculo(): ?Vehiculos
     {
         return $this->vehiculo;
     }
 
-    public function setVehiculoId(?Vehiculos $vehiculo): static
+    public function setVehiculo(?Vehiculos $vehiculo): static
     {
         $this->vehiculo = $vehiculo;
 
         return $this;
     }
 
-    public function getClienteId(): ?Clientes
+    public function getCliente(): ?Clientes
     {
         return $this->cliente;
     }
 
-    public function setClienteId(?Clientes $cliente): static
+    public function setCliente(?Clientes $cliente): static
     {
         $this->cliente = $cliente;
 

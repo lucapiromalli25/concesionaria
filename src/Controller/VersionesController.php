@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Form\FormInterface;
 
 #[Route('/versiones')]
 #[IsGranted('ROLE_ADMIN')]
@@ -79,6 +80,11 @@ class VersionesController extends AbstractController
 
     private function getSuccessJsonResponse(Versiones $version, string $message): JsonResponse
     {
+        $modelo = $version->getModelo();
+        $marca = $modelo->getMarca();
+        
+        // El texto que se mostrará en el desplegable
+        $displayText = "{$marca->getName()} - {$modelo->getName()} - {$version->getName()}";
         return new JsonResponse([
             'status' => 'success',
             'message' => $message,
@@ -86,11 +92,28 @@ class VersionesController extends AbstractController
                 'id' => $version->getId(),
                 'name' => $version->getName(),
                 'characteristics' => $version->getCharacteristics(),
+                'displayText' => $displayText,
                 'modelo' => [
                     'name' => $version->getModelo()->getName(),
                     'marca' => ['name' => $version->getModelo()->getMarca()->getName()]
                 ]
             ]
         ]);
+    }
+
+    private function getFormErrors(FormInterface $form): array
+    {
+        $errors = [];
+        foreach ($form->getErrors(true) as $error) {
+            $errors[$error->getOrigin()->getName()][] = $error->getMessage();
+        }
+        foreach ($form as $child) {
+            if (!$child->isValid()) {
+                foreach ($child->getErrors(true) as $error) {
+                    $errors[$child->getName()][] = $error->getMessage();
+                }
+            }
+        }
+        return $errors;
     }
 }
