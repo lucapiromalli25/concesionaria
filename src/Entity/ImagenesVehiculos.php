@@ -4,8 +4,11 @@ namespace App\Entity;
 
 use App\Repository\ImagenesVehiculosRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: ImagenesVehiculosRepository::class)]
+#[Vich\Uploadable] // Le dice a Vich que esta entidad maneja subidas de archivos
 class ImagenesVehiculos
 {
     #[ORM\Id]
@@ -13,59 +16,84 @@ class ImagenesVehiculos
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne]
-    private ?Vehiculos $vehiculo = null;
+    // --- CAMPO VIRTUAL PARA EL ARCHIVO ---
+    // No se guarda en la BD. Es solo para el formulario.
+    #[Vich\UploadableField(mapping: 'vehicle_images', fileNameProperty: 'imageName')]
+    private ?File $imageFile = null;
 
+    // --- CAMPO REAL EN LA BASE DE DATOS ---
+    // Aquí es donde se guarda el nombre del archivo (ej: 65f5e8b7a9f1a-mi-auto.jpg)
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $file_path = null;
+    private ?string $imageName = null;
+    
+    #[ORM\ManyToOne(inversedBy: 'imagenesVehiculos')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Vehiculos $vehiculo = null;
+    
+    // Este campo es requerido por Vich para detectar cambios
+    #[ORM\Column]
+    private ?\DateTimeImmutable $updatedAt = null;
 
+    // (Opcional) Puedes mantener otros campos si los necesitas
     #[ORM\Column(nullable: true)]
     private ?int $orden = null;
 
     #[ORM\Column(nullable: true)]
-    private ?bool $is_main = null;
+    private ?bool $isMain = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $created_at = null;
-
-    #[ORM\Column]
-    private ?\DateTimeImmutable $updated_at = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $deleted_at = null;
-
-    #[ORM\ManyToOne]
-    private ?User $created_by = null;
-
-    #[ORM\ManyToOne]
-    private ?User $updated_by = null;
+    // --- GETTERS Y SETTERS ---
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getVehiculoId(): ?Vehiculos
+    /**
+     * Si se establece un archivo, también se actualiza 'updatedAt' para que
+     * el bundle sepa que la entidad ha cambiado y necesita procesar el archivo.
+     */
+    public function setImageFile(?File $imageFile = null): void
+    {
+        $this->imageFile = $imageFile;
+        if (null !== $imageFile) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getImageFile(): ?File
+    {
+        return $this->imageFile;
+    }
+
+    public function setImageName(?string $imageName): void
+    {
+        $this->imageName = $imageName;
+    }
+
+    public function getImageName(): ?string
+    {
+        return $this->imageName;
+    }
+    
+    public function getVehiculo(): ?Vehiculos
     {
         return $this->vehiculo;
     }
 
-    public function setVehiculoId(?Vehiculos $vehiculo): static
+    public function setVehiculo(?Vehiculos $vehiculo): static
     {
         $this->vehiculo = $vehiculo;
-
         return $this;
     }
 
-    public function getFilePath(): ?string
+    public function getUpdatedAt(): ?\DateTimeImmutable
     {
-        return $this->file_path;
+        return $this->updatedAt;
     }
 
-    public function setFilePath(?string $file_path): static
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
     {
-        $this->file_path = $file_path;
-
+        $this->updatedAt = $updatedAt;
         return $this;
     }
 
@@ -77,79 +105,17 @@ class ImagenesVehiculos
     public function setOrden(?int $orden): static
     {
         $this->orden = $orden;
-
         return $this;
     }
 
-    public function isMain(): ?bool
+    public function isIsMain(): ?bool
     {
-        return $this->is_main;
+        return $this->isMain;
     }
 
-    public function setIsMain(?bool $is_main): static
+    public function setIsMain(?bool $isMain): static
     {
-        $this->is_main = $is_main;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTimeImmutable
-    {
-        return $this->created_at;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $created_at): static
-    {
-        $this->created_at = $created_at;
-
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updated_at;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updated_at): static
-    {
-        $this->updated_at = $updated_at;
-
-        return $this;
-    }
-
-    public function getDeletedAt(): ?\DateTimeImmutable
-    {
-        return $this->deleted_at;
-    }
-
-    public function setDeletedAt(?\DateTimeImmutable $deleted_at): static
-    {
-        $this->deleted_at = $deleted_at;
-
-        return $this;
-    }
-
-    public function getCreatedBy(): ?User
-    {
-        return $this->created_by;
-    }
-
-    public function setCreatedBy(?User $created_by): static
-    {
-        $this->created_by = $created_by;
-
-        return $this;
-    }
-
-    public function getUpdatedBy(): ?User
-    {
-        return $this->updated_by;
-    }
-
-    public function setUpdatedBy(?User $updated_by): static
-    {
-        $this->updated_by = $updated_by;
-
+        $this->isMain = $isMain;
         return $this;
     }
 }
