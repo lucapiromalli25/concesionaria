@@ -14,6 +14,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 
 class VehiculosType extends AbstractType
 {
@@ -70,6 +71,15 @@ class VehiculosType extends AbstractType
                 'label' => 'Observaciones Internas',
                 'required' => false,
                 'attr' => ['rows' => 3],
+            ])
+            ->add('imagenesVehiculos', CollectionType::class, [
+                'entry_type' => ImagenVehiculoType::class, // Le decimos que cada elemento de la colección es un formulario de imagen
+                'entry_options' => ['label' => false],
+                'allow_add' => true,      // Permite que se añadan nuevos formularios de imagen con JavaScript
+                'allow_delete' => true,   // Permite que se eliminen
+                'by_reference' => false,  // Muy importante para que Symfony llame a los métodos add/remove de la entidad Vehiculos
+                'label' => 'Imágenes del Vehículo',
+                'label_attr' => ['class' => 'fw-bold'],
             ]);
     }
 

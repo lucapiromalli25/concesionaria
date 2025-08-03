@@ -33,7 +33,16 @@
             <div class="card-header"><h4 class="card-title">Datos de la Venta</h4></div>
             <div class="card-body">
                 {{ form_start(form) }}
-                    {{ form_row(form.cliente) }}
+                    <div class="form-group">
+                        {{ form_label(form.cliente) }}
+                        <div class="input-group">
+                            {{ form_widget(form.cliente) }}
+                            <button class="btn btn-primary" type="button" id="btn-add-nested-cliente">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="text-danger form-error-message mt-1" data-field-error="cliente"></div>
+                    </div>
                     <div class="row">
                         <div class="col-md-6">{{ form_row(form.sale_date) }}</div>
                         <div class="col-md-6">{{ form_row(form.final_sale_price) }}</div>
@@ -50,14 +59,80 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="nestedFormModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nestedFormModalLabel">Nuevo Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="nested-modal-body-content"></div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
     <script>
-        $(document).ready(function() {
-            // Usamos el ID que Symfony genera para el campo 'cliente'
-            $('#venta_cliente').select2();
+        document.addEventListener('DOMContentLoaded', function() {
+            const clienteSelect = $('#venta_cliente');
+            clienteSelect.select2({
+                placeholder: 'Buscar cliente...',
+                width: '100%'
+            });
+
+            const nestedModalEl = document.getElementById('nestedFormModal');
+            const nestedFormModal = new bootstrap.Modal(nestedModalEl);
+            const nestedModalBody = document.getElementById('nested-modal-body-content');
+
+            // Abrir modal anidado para crear cliente
+            document.getElementById('btn-add-nested-cliente').addEventListener('click', function() {
+                fetch('{{ path('app_clientes_new') }}')
+                    .then(r => r.text()).then(html => {
+                        nestedModalBody.innerHTML = html;
+                        nestedFormModal.show();
+                        attachNestedFormSubmitListener();
+                    });
+            });
+
+            // Manejar el envío del formulario de nuevo cliente
+            function attachNestedFormSubmitListener() {
+                const nestedForm = document.getElementById('formCliente');
+                if (!nestedForm) return;
+
+                nestedForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const btn = nestedForm.querySelector('button[type="submit"]');
+                    const spinner = btn.querySelector('.spinner-border');
+                    spinner.classList.remove('d-none');
+                    btn.disabled = true;
+
+                    fetch(nestedForm.action, { method: 'POST', body: new FormData(nestedForm), headers: {'X-Requested-with': 'XMLHttpRequest'} })
+                    .then(r => r.json()).then(data => {
+                        if (data.status === 'success') {
+                            const newClient = data.cliente;
+                            const newOption = new Option(newClient.displayText, newClient.id, true, true);
+                            
+                            clienteSelect.append(newOption).trigger('change');
+                            
+                            nestedFormModal.hide();
+                            $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                        } else {
+                            // Manejo de errores en el form anidado
+                            Object.keys(data.errors).forEach(fieldName => {
+                                const container = nestedForm.querySelector(`[data-field-error="${fieldName}"]`);
+                                if (container) { container.innerHTML = `<p class="mb-0">${data.errors[fieldName].join(', ')}</p>`; }
+                            });
+                        }
+                    })
+                    .finally(() => {
+                        spinner.classList.add('d-none');
+                        btn.disabled = false;
+                    });
+                });
+            }
         });
     </script>
 {% endblock %}

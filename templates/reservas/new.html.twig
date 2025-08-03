@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Registrar Reserva de Vehículo{% endblock %}
+
+{% block body %}
+<div class="page-header">
+    <h3 class="fw-bold mb-3">Registrar Reserva</h3>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title">Vehículo a Reservar</h4></div>
+            <div class="card-body">
+                <h5>{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</h5>
+                <p class="card-text">{{ vehiculo.version.name }} - Año {{ vehiculo.anio }}</p>
+                <ul class="list-group list-group-flush">
+                     <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Precio Sugerido: <span class="fw-bold">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title">Datos de la Reserva</h4></div>
+            <div class="card-body">
+                {{ form_start(form) }}
+                    {{ form_row(form.cliente) }}
+                    <div class="row">
+                        <div class="col-md-6">{{ form_row(form.reservationDate) }}</div>
+                        <div class="col-md-6">{{ form_row(form.reservationAmount) }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">{{ form_row(form.expirationDate) }}</div>
+                        <div class="col-md-6">{{ form_row(form.status) }}</div>
+                    </div>
+                    {{ form_row(form.observations) }}
+                    
+                    <div class="text-end mt-3">
+                        <a href="{{ path('app_vehiculos_index') }}" class="btn btn-danger">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Confirmar Reserva</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function() {
+            // Aplica Select2 al desplegable de clientes
+            $('#reserva_client').select2();
+        });
+    </script>
+{% endblock %}

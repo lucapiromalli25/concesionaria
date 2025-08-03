@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/vehiculos')]
-#[IsGranted('ROLE_USER')]
+#[IsGranted('ROLE_MANAGER')]
 class VehiculosController extends AbstractController
 {
     #[Route('/', name: 'app_vehiculos_index', methods: ['GET'])]
@@ -81,6 +81,16 @@ class VehiculosController extends AbstractController
         }
 
         return $this->render('vehiculos/_form_modal.html.twig', ['vehiculo' => $vehiculo, 'form' => $form->createView()]);
+    }
+
+    #[Route('/{id}', name: 'app_vehiculos_show', methods: ['GET'])]
+    public function show(Vehiculos $vehiculo): Response
+    {
+        // Gracias al ParamConverter de Symfony, ya tenemos el objeto Vehiculo
+        // correcto a partir del {id} de la URL. Solo tenemos que renderizar la vista.
+        return $this->render('vehiculos/show.html.twig', [
+            'vehiculo' => $vehiculo,
+        ]);
     }
 
     private function getSuccessJsonResponse(Vehiculos $vehiculo, string $message): JsonResponse

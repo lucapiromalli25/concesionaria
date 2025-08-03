@@ -42,7 +42,7 @@
 		{% endblock %}
 	</head>
 	<body>
-		<div class="wrapper">
+		<div class="wrapper sidebar-fixed">
 			<div class="sidebar" data-background-color="dark">
 				<div class="sidebar-logo">
 					<div class="logo-header" data-background-color="dark">
@@ -71,7 +71,7 @@
 							{# EJEMPLO DE LINK NORMAL #}
 							<li class="nav-item">
 								<a
-									href="#" class="nav-link">
+									href="{{path('app_root')}}" class="nav-link">
 									{# Cambia 'app_home' a tu ruta principal #}
 									<i class="fas fa-home"></i>
 									<p>Dashboard</p>
@@ -85,7 +85,7 @@
 							</li>
 
 							{# EJEMPLO DE LINK CON SUBMENÚ Y PROTEGIDO POR ROL #}
-							{% if is_granted('ROLE_ADMIN') %}
+							{% if is_granted('ROLE_SALESPERSON') %}
 								<li class="nav-item">
 									<a data-bs-toggle="collapse" href="#configuracion">
 										<i class="fas fa-cogs"></i>
@@ -121,6 +121,18 @@
 													<p>Clientes</p>
 												</a>
 											</li>
+											<li class="nav-item">
+												<a href="{{ path('app_ventas_index') }}">
+													<i class="fas fa-file-invoice-dollar"></i>
+													<p>Ventas</p>
+												</a>
+											</li>
+											<li class="nav-item">
+												<a href="{{ path('app_reservas_index') }}">
+													<i class="fas fa-calendar-alt"></i>
+													<p>Reservas</p>
+												</a>
+											</li>
 											{# Aquí irán los futuros links como Versiones, etc. #}
 										</ul>
 									</div>
@@ -146,7 +158,7 @@
 					<div class="main-header-logo">
 						<div class="logo-header" data-background-color="dark">
 							<a
-								href="#" class="logo">
+								href="{{path('app_root')}}" class="logo">
 								{# Cambia 'app_home' a tu ruta principal #}
 								<img src="{{ asset('assets/img/kaiadmin/logo_light.svg') }}" alt="navbar brand" class="navbar-brand" height="20">
 							</a>

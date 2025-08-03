@@ -14,7 +14,8 @@ class Ventas
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\OneToOne(targetEntity: Vehiculos::class, inversedBy: 'venta')]
+    #[ORM\JoinColumn(nullable: false, unique: true)]
     private ?Vehiculos $vehiculo = null;
 
     #[ORM\ManyToOne]

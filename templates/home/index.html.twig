@@ -3,204 +3,395 @@
 {% block title %}Dashboard - Concesionaria{% endblock %}
 
 {% block body %}
-<div class="page-header">
-    <h3 class="fw-bold mb-3">Dashboard Principal</h3>
-    <ul class="breadcrumbs">
-        <li class="nav-home">
-            <a href="{{ path('app_home') }}">
-                <i class="icon-home"></i>
-            </a>
-        </li>
-        <li class="separator">
-            <i class="icon-arrow-right"></i>
-        </li>
-        <li class="nav-item">
-            <a href="#">Inicio</a>
-        </li>
-    </ul>
-</div>
-
-<div class="d-flex justify-content-end mb-3">
-
-    <a href="{{ path('app_vehiculos_index') }}" class="btn btn-success btn-round">
-        <i class="fas fa-dollar-sign"></i>
-        Registrar Venta
-    </a>
-</div>
-
-<div class="row">
-    <div class="col-sm-6 col-md-4">
-        <a href="{{ path('app_vehiculos_index') }}" class="text-decoration-none">
-            <div class="card card-stats card-round">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-icon">
-                            <div class="icon-big text-center icon-primary bubble-shadow-small">
-                                <i class="fas fa-car"></i>
-                            </div>
-                        </div>
-                        <div class="col col-stats ms-3 ms-sm-0">
-                            <div class="numbers">
-                                <p class="card-category">Vehículos en Stock</p>
-                                <h4 class="card-title">{{ totalVehiculos }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    {# --- ENCABEZADO Y ACCIONES PRINCIPALES --- #}
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <div>
+                <h3 class="fw-bold mb-0">Dashboard Principal</h3>
+                <ul class="breadcrumbs mt-2">
+                    <li class="nav-home"><a href="{{ path('app_home') }}"><i class="icon-home"></i></a></li>
+                    <li class="separator"><i class="icon-arrow-right"></i></li>
+                    <li class="nav-item"><a href="#">Inicio</a></li>
+                </ul>
             </div>
-        </a>
-    </div>
-    <div class="col-sm-6 col-md-4">
-        <a href="#" class="text-decoration-none"> {# Reemplazar con la ruta del listado de ventas #}
-            <div class="card card-stats card-round">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-icon">
-                            <div class="icon-big text-center icon-success bubble-shadow-small">
-                                <i class="fas fa-hand-holding-usd"></i>
-                            </div>
-                        </div>
-                        <div class="col col-stats ms-3 ms-sm-0">
-                            <div class="numbers">
-                                <p class="card-category">Ventas del Mes</p>
-                                <h4 class="card-title">{{ ventasMesActual }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-sm-6 col-md-4">
-         <a href="{{ path('app_vehiculos_index') }}" class="text-decoration-none">
-            <div class="card card-stats card-round">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-icon">
-                            <div class="icon-big text-center icon-info bubble-shadow-small">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                        </div>
-                        <div class="col col-stats ms-3 ms-sm-0">
-                            <div class="numbers">
-                                <p class="card-category">Valor del Inventario</p>
-                                <h4 class="card-title">${{ valorTotalInventario|number_format(0, ',', '.') }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Ventas en los últimos 15 días</div>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="salesTrendChart"></canvas>
-                </div>
+            <div class="ms-auto">
+                <a href="{{ path('app_vehiculos_index', {'action': 'new'}) }}" class="btn btn-primary btn-round">
+                    <i class="fa fa-plus"></i>
+                    Agregar Vehículo
+                </a>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Últimos Ingresos</div>
-            </div>
-            <div class="card-body">
-                <div class="list-group">
-                    {% for vehiculo in ultimosIngresos %}
-                        <a href="{{ path('app_vehiculos_index') }}" class="list-group-item list-group-item-action flex-column align-items-start">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1 fw-bold">
-                                    {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}
-                                </h5>
-                                <small>{{ vehiculo.anio }}</small>
-                            </div>
-                            <p class="mb-1">Versión: {{ vehiculo.version.name }}</p>
-                        </a>
-                    {% else %}
-                        <p class="text-center">No hay ingresos recientes.</p>
-                    {% endfor %}
+
+    {# --- FILA SUPERIOR: INDICADORES CLAVE (KPIs) --- #}
+    {# --- FILA SUPERIOR: INDICADORES CLAVE (KPIs) --- #}
+<div class="row">
+    <div class="col-sm-6 col-md-3 mb-4">
+        <a href="{{ path('app_vehiculos_index') }}" class="text-decoration-none">
+            <div class="card card-stats card-round h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-big text-center icon-primary bubble-shadow-small me-3">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        <div class="numbers">
+                            <p class="card-category text-uppercase m-0">Vehículos en Stock</p>
+                            <h4 class="card-title fw-bold m-0">{{ totalVehiculos }}</h4>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-md-3 mb-4">
+        <a href="{{ path('app_ventas_index') }}" class="text-decoration-none">
+            <div class="card card-stats card-round h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-big text-center icon-success bubble-shadow-small me-3">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                        <div class="numbers">
+                            <p class="card-category text-uppercase m-0">Ventas del Mes</p>
+                            <h4 class="card-title fw-bold m-0">{{ ventasMesActual }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-md-3 mb-4">
+        <a href="{{ path('app_ventas_index') }}" class="text-decoration-none">
+            <div class="card card-stats card-round h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-big text-center icon-secondary bubble-shadow-small me-3">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="numbers">
+                            <p class="card-category text-uppercase m-0">Ventas Históricas</p>
+                            <h4 class="card-title fw-bold m-0">${{ totalVendidoHistorico|number_format(0, ',', '.') }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </a>
+    </div>
+    </div>
+    <div class="col-sm-6 col-md-3 mb-4">
+        <a href="{{ path('app_vehiculos_index') }}" class="text-decoration-none">
+            <div class="card card-stats card-round h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-big text-center icon-info bubble-shadow-small me-3">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="numbers">
+                            <p class="card-category text-uppercase m-0">Valor del Inventario</p>
+                            <h4 class="card-title fw-bold m-0">${{ valorTotalInventario|number_format(0, ',', '.') }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+    {# --- FILA PRINCIPAL: GRÁFICOS Y DATOS ADICIONALES --- #}
+    <div class="row">
+        {# Columna izquierda con gráficos de tendencia #}
+        <div class="col-lg-8">
+            <div class="row">
+            <div class="col-md-4 mb-4">
+                {# GRÁFICO: CANTIDAD DE VENTAS POR MES #}
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Ventas por Mes</div></div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="salesCountByMonthChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                {# GRÁFICO: MONTO RECAUDADO POR MES #}
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Monto Recaudado</div></div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="salesAmountByMonthChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                {# --- VENTAS POR EMPLEADO (GRÁFICO) --- #}
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Ventas por Empleado</div></div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="salespersonChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <div class="row">
+                <div class="col-12 mb-4">
+                    {# GRÁFICO: TENDENCIA DE VENTAS (ÚLTIMOS 15 DÍAS) #}
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Tendencia de Ventas (Últimos 15 Días)</div></div>
+                        <div class="card-body">
+                            <div class="chart-container"><canvas id="salesTrendChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
         
-        <div class="card">
-             <div class="card-header">
-                <div class="card-title">Stock por Marca</div>
+
+        {# Columna derecha con listas y gráficos compactos #}
+        <div class="col-lg-4">
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    {# WIDGET: TOP VENDEDORES #}
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Top Vendedores del Mes</div></div>
+                        <div class="card-body">
+                            {% for salesperson in topSalespersons %}
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="avatar">
+                                        <span class="avatar-title rounded-circle border border-white bg-primary">{{ salesperson.complete_name|first|upper }}</span>
+                                    </div>
+                                    <div class="flex-fill ms-3">
+                                        <h6 class="fw-bold mb-0">{{ salesperson.complete_name }}</h6>
+                                        <span class="text-muted">{{ salesperson.email }}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success">{{ salesperson.salesCount }} ventas</span>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-center text-muted">No hay ventas registradas este mes.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-md-12 mb-4">
+                    {# WIDGET: STOCK POR MARCA (GRÁFICO) #}
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Stock por Marca</div></div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="brandDonutChart" style="cursor:pointer;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="brandDonutChart"></canvas>
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    {# WIDGET: ÚLTIMOS INGRESOS #}
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Últimos Ingresos</div></div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                {% for vehiculo in ultimosIngresos %}
+                                    <a href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}" class="list-group-item list-group-item-action flex-column align-items-start">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1 fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</h5>
+                                            <small>{{ vehiculo.anio }}</small>
+                                        </div>
+                                        <p class="mb-1">Versión: {{ vehiculo.version.name }}</p>
+                                    </a>
+                                {% else %}
+                                    <p class="text-center text-muted">No hay ingresos recientes.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-12 mb-4">
+                    {# WIDGET: ACTIVIDAD RECIENTE #}
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Actividad Reciente</div></div>
+                        <div class="card-body">
+                            <ol class="activity-feed">
+                                {% for activity in activityFeed %}
+                                    <li class="feed-item feed-item-{{ activity.color }}">
+                                        <time class="date" datetime="{{ activity.date|date('Y-m-d H:i') }}">{{ activity.date|date('d/m H:i') }}</time>
+                                        <span class="text">{{ activity.text }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="feed-item">No hay actividad reciente.</li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
+    
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            
-            // --- GRÁFICO 1: TENDENCIA DE VENTAS (LÍNEAS) ---
-            const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
-            const salesTrendData = {{ salesTrendChart|json_encode|raw }};
-            const salesChart = new Chart(salesCtx, {
-                type: 'line',
-                data: {
-                    labels: salesTrendData.labels,
-                    datasets: [{
-                        label: "Ventas por día",
-                        borderColor: "#1d7af3",
-                        pointBorderColor: "#FFF",
-                        pointBackgroundColor: "#1d7af3",
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 4,
-                        pointHoverBorderWidth: 1,
-                        pointRadius: 4,
-                        backgroundColor: "transparent",
-                        fill: true,
-                        borderWidth: 2,
-                        data: salesTrendData.data,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                }
-            });
-
-            // --- GRÁFICO 2: STOCK POR MARCA (DONA) ---
-            const brandCtx = document.getElementById('brandDonutChart').getContext('2d');
-            const brandData = {{ vehiculosPorMarcaChart|json_encode|raw }};
-            const brandChart = new Chart(brandCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: brandData.labels,
-                    datasets: [{
-                        data: brandData.data,
-                        backgroundColor: ["#1d7af3", "#f3545d", "#fdaf4b", "#58D68D", "#AF7AC5", "#5DADE2", "#F4D03F"]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
+            // --- GRÁFICO 1: Cantidad de Ventas por Mes (Barras) ---
+            const salesCountChartElement = document.getElementById('salesCountByMonthChart');
+            if (salesCountChartElement) {
+                const countData = {{ salesByMonthChart|json_encode|raw }};
+                new Chart(salesCountChartElement.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: countData.labels,
+                        datasets: [{
+                            label: "Cantidad de Ventas",
+                            backgroundColor: "#fdaf4b",
+                            data: countData.count_data,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                     }
-                }
-            });
+                });
+            }
+
+            // --- GRÁFICO 2: Monto Recaudado por Mes (Barras) ---
+            const salesAmountChartElement = document.getElementById('salesAmountByMonthChart');
+            if (salesAmountChartElement) {
+                const amountData = {{ salesByMonthChart|json_encode|raw }};
+                new Chart(salesAmountChartElement.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: amountData.labels,
+                        datasets: [{
+                            label: "Monto Recaudado ($)",
+                            backgroundColor: "#58D68D",
+                            data: amountData.amount_data,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- GRÁFICO 3: Stock por Marca (Dona interactivo) ---
+            const brandDonutChartElement = document.getElementById('brandDonutChart');
+            if (brandDonutChartElement) {
+                const brandData = {{ vehiculosPorMarcaChart|json_encode|raw }};
+                const brandUrls = {
+                    {% for label in vehiculosPorMarcaChart.labels %}
+                        "{{ label|e('js') }}": "{{ path('app_vehiculos_index') }}?brand={{ label|url_encode }}",
+                    {% endfor %}
+                };
+                new Chart(brandDonutChartElement.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: brandData.labels,
+                        datasets: [{
+                            data: brandData.data,
+                            backgroundColor: ["#1d7af3", "#f3545d", "#fdaf4b", "#58D68D", "#AF7AC5", "#5DADE2", "#F4D03F"]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } },
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const i = elements[0].index;
+                                const brandName = brandData.labels[i];
+                                if (brandUrls[brandName]) {
+                                    window.location.href = brandUrls[brandName];
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- GRÁFICO 4: Tendencia de Ventas (Línea) ---
+            const salesTrendChartElement = document.getElementById('salesTrendChart');
+            if (salesTrendChartElement){
+                const salesTrendData = {{ salesTrendChart|json_encode|raw }};
+                new Chart(salesTrendChartElement.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: salesTrendData.labels,
+                        datasets: [{
+                            label: "Ventas por día",
+                            borderColor: "#1d7af3",
+                            pointBorderColor: "#FFF",
+                            pointBackgroundColor: "#1d7af3",
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 4,
+                            pointHoverBorderWidth: 1,
+                            pointRadius: 4,
+                            backgroundColor: "rgba(29, 122, 243, 0.2)",
+                            fill: true,
+                            borderWidth: 2,
+                            data: salesTrendData.data,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+
+            // --- GRÁFICO 5: Ventas por Empleado (Barras horizontales) ---
+            const salespersonChartElement = document.getElementById('salespersonChart');
+            if (salespersonChartElement) {
+                const salespersonData = {{ salespersonChartData|json_encode|raw }};
+                new Chart(salespersonChartElement.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: salespersonData.labels,
+                        datasets: [{
+                            label: 'Cantidad de Ventas',
+                            backgroundColor: '#1d7af3',
+                            data: salespersonData.salesCount,
+                        }, {
+                            label: 'Monto Total Vendido',
+                            backgroundColor: '#f3545d',
+                            data: salespersonData.salesAmount,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', // Hace que las barras sean horizontales
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                            }
+                        }
+                    }
+                });
+            }
         });
     </script>
 {% endblock %}

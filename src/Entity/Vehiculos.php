@@ -5,6 +5,9 @@ namespace App\Entity;
 use App\Repository\VehiculosRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use App\Entity\Reservas;
 
 #[ORM\Entity(repositoryClass: VehiculosRepository::class)]
 class Vehiculos
@@ -61,6 +64,23 @@ class Vehiculos
 
     #[ORM\ManyToOne]
     private ?User $updated_by = null;
+
+    /**
+     * @var Collection<int, ImagenesVehiculos>
+     */
+    #[ORM\OneToMany(mappedBy: 'vehiculo', targetEntity: ImagenesVehiculos::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $imagenesVehiculos;
+
+    #[ORM\OneToOne(mappedBy: 'vehiculo', cascade: ['persist', 'remove'])]
+    private ?Ventas $venta = null;
+
+    #[ORM\OneToOne(mappedBy: 'vehiculo', cascade: ['persist', 'remove'])]
+    private ?Reservas $reserva = null;
+
+    public function __construct()
+    {
+        $this->imagenesVehiculos = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -258,4 +278,68 @@ class Vehiculos
 
         return $this;
     }
+
+    /**
+     * @return Collection<int, ImagenesVehiculos>
+     */
+    public function getImagenesVehiculos(): Collection
+    {
+        return $this->imagenesVehiculos;
+    }
+
+    public function addImagenesVehiculo(ImagenesVehiculos $imagenesVehiculo): static
+    {
+        if (!$this->imagenesVehiculos->contains($imagenesVehiculo)) {
+            $this->imagenesVehiculos->add($imagenesVehiculo);
+            $imagenesVehiculo->setVehiculo($this);
+        }
+
+        return $this;
+    }
+
+    public function removeImagenesVehiculo(ImagenesVehiculos $imagenesVehiculo): static
+    {
+        if ($this->imagenesVehiculos->removeElement($imagenesVehiculo)) {
+            // set the owning side to null (unless already changed)
+            if ($imagenesVehiculo->getVehiculo() === $this) {
+                $imagenesVehiculo->setVehiculo(null);
+            }
+
+            $this->setUpdatedAt(new \DateTimeImmutable());
+        }
+
+        return $this;
+    }
+
+    public function getVenta(): ?Ventas
+    {
+        return $this->venta;
+    }
+
+    public function setVenta(Ventas $venta): static
+    {
+        // set the owning side of the relation if necessary
+        if ($venta->getVehiculo() !== $this) {
+            $venta->setVehiculo($this);
+        }
+
+        $this->venta = $venta;
+
+        return $this;
+    }
+
+    public function getReserva(): ?Reservas
+    {
+        return $this->reserva;
+    }
+
+    public function setReserva(Reservas $reserva): static
+    {
+        if ($reserva->getVehiculo() !== $this) {
+            $reserva->setVehiculo($this);
+        }
+        $this->reserva = $reserva;
+        return $this;
+    }
+
 }

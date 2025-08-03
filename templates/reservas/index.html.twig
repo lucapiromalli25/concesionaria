@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Historial de Reservas{% endblock %}
+
+{% block body %}
+<div class="page-header">
+    <h3 class="fw-bold mb-3">Historial de Reservas</h3>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Todas las Reservas</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabla-reservas">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha</th>
+                                <th>Vehículo</th>
+                                <th>clientee</th>
+                                <th>Estado</th>
+                                <th class="text-end">Monto Seña</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for reserva in reservas %}
+                            <tr>
+                                <td>{{ reserva.id }}</td>
+                                <td>{{ reserva.reservationDate|date('d/m/Y') }}</td>
+                                <td>
+                                    <a href="{{ path('app_vehiculos_show', {'id': reserva.vehiculo.id}) }}">
+                                        <span class="fw-bold">{{ reserva.vehiculo.version.modelo.marca.name }} {{ reserva.vehiculo.version.modelo.name }}</span><br>
+                                        <small>{{ reserva.vehiculo.version.name }} ({{ reserva.vehiculo.anio }})</small>
+                                    </a>
+                                </td>
+                                <td>{{ reserva.cliente.firstName }} {{ reserva.cliente.lastName }}</td>
+                                <td>
+                                    {% if reserva.status == 'Activa' %}
+                                        <span class="badge bg-info">Activa</span>
+                                    {% elseif reserva.status == 'Completada' %}
+                                         <span class="badge bg-success">Completada</span>
+                                    {% elseif reserva.status == 'Vencida' %}
+                                        <span class="badge bg-danger">Vencida</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ reserva.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold">${{ reserva.reservationAmount|number_format(2, ',', '.') }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No se encontraron reservas</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function() {
+            $('#tabla-reservas').DataTable({
+                "pageLength": 10,
+                "language": {
+                    "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+                },
+                "order": [[ 1, "desc" ]]
+            });
+        });
+    </script>
+{% endblock %}

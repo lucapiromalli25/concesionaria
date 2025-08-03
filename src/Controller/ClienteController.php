@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/clientes')]
-#[IsGranted('ROLE_USER')]
+#[IsGranted('ROLE_SALESPERSON')]
 class ClienteController extends AbstractController
 {
     #[Route('/', name: 'app_clientes_index', methods: ['GET'])]
@@ -80,6 +80,7 @@ class ClienteController extends AbstractController
 
     private function getSuccessJsonResponse(Clientes $cliente, string $message): JsonResponse
     {
+        $displayText = "{$cliente->getFirstName()} {$cliente->getLastName()} (DNI: {$cliente->getDocumentNumber()})";
         return new JsonResponse([
             'status' => 'success', 'message' => $message,
             'cliente' => [
@@ -88,6 +89,7 @@ class ClienteController extends AbstractController
                 'last_name' => $cliente->getLastName(),
                 'document_number' => $cliente->getDocumentNumber(),
                 'phone' => $cliente->getPhone(),
+                'displayText' => $displayText
             ]
         ]);
     }

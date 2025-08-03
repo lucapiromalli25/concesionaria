@@ -24,30 +24,65 @@
                                 <th>Año</th>
                                 <th>Color</th>
                                 <th>Precio Venta</th>
+                                <th>Estado</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                        {% for vehiculo in vehiculos %}
-                            <tr data-id="{{ vehiculo.id }}">
-                                <td>{{ vehiculo.id }}</td>
-                                <td class="vehiculo-desc">
-                                    <span class="fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</span><br>
-                                    <small>{{ vehiculo.version.name }}</small>
-                                </td>
-                                <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
-                                <td class="vehiculo-color">{{ vehiculo.color }}</td>
-                                <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-warning btn-sm btn-editar">Editar</button>
-                                    {% if vehiculo.state == 'En Stock' %}
-                                        <a href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}" class="btn btn-success btn-sm">Vender</a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr id="fila-sin-vehiculos"><td colspan="6" class="text-center">No se encontraron vehículos</td></tr>
-                        {% endfor %}
+                            {% for vehiculo in vehiculos %}
+                                <tr data-id="{{ vehiculo.id }}">
+                                    <td>{{ vehiculo.id }}</td>
+                                    <td class="vehiculo-desc">
+                                        <span class="fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</span><br>
+                                        <small>{{ vehiculo.version.name }}</small>
+                                    </td>
+                                    <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
+                                    <td class="vehiculo-color">{{ vehiculo.color }}</td>
+                                    <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
+                                    
+                                    {# --- NUEVA CELDA PARA EL ESTADO --- #}
+                                    <td>
+                                        {% if vehiculo.state == 'Vendido' %}
+                                            <span class="badge bg-success">Vendido</span>
+                                        {% elseif vehiculo.state == 'Reservado' %}
+                                            <span class="badge bg-warning text-dark">Reservado</span>
+                                        {% else %}
+                                            <span class="badge bg-info">En Stock</span>
+                                        {% endif %}
+                                    </td>
+
+                                    {# --- NUEVA CELDA DE ACCIONES CON DROPDOWN --- #}
+                                    <td class="text-end">
+                                        <div class="dropdown">
+                                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton{{ vehiculo.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Acciones
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ vehiculo.id }}">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}">Ver Detalles</a>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item btn-editar">Editar</button>
+                                                </li>
+                                                <li>
+                                                {% if vehiculo.state in ['En Stock', 'Reservado'] %}
+                                                    <hr class="dropdown-divider"></li>
+                                                {% endif %}
+                                                
+                                                {% if vehiculo.state == 'En Stock' %}
+                                                    <li><a class="dropdown-item" href="{{ path('app_reservas_new', {'id': vehiculo.id}) }}">Reservar</a></li>
+                                                {% endif %}
+                                                
+                                                {% if vehiculo.state in ['En Stock', 'Reservado'] %}
+                                                    <li><a class="dropdown-item" href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}">Vender</a></li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr id="fila-sin-vehiculos"><td colspan="7" class="text-center">No se encontraron vehículos</td></tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -135,6 +170,7 @@
                     .then(r => r.text()).then(html => {
                         modalBody.innerHTML = html;
                         initializeSelect2('#formModal .form-select');
+                        initializeImageCollection();
                         formModal.show();
                         attachFormSubmitListener();
                     });
@@ -156,6 +192,13 @@
             }
         });
 
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'new') {
+            if (newVehicleButton) {
+                newVehicleButton.click();
+            }
+        }
+        
         // --- NIVEL 2: ABRIR MODAL ANIDADO DE VERSIONES ---
         modalBody.addEventListener('click', function(e) {
             if (e.target.closest('#btn-add-nested-version')) {
@@ -183,6 +226,44 @@
                     });
             }
         });
+
+        function initializeImageCollection() {
+            const addBtn = document.getElementById('btn-add-imagen');
+            const collectionHolder = document.getElementById('imagenes-collection');
+            if (!addBtn || !collectionHolder) return;
+
+            const addRemoveButton = (item) => {
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'btn btn-danger btn-sm btn-remove-imagen';
+                removeButton.innerHTML = '<i class="fa fa-trash"></i>';
+                const formGroup = item.querySelector('.form-group');
+                if (formGroup) {
+                    formGroup.classList.add('input-group');
+                    formGroup.appendChild(removeButton);
+                }
+            };
+            
+            collectionHolder.querySelectorAll('li').forEach(row => addRemoveButton(row));
+
+            addBtn.addEventListener('click', function() {
+                let index = collectionHolder.dataset.index;
+                const newForm = collectionHolder.dataset.prototype.replace(/__name__/g, index);
+                collectionHolder.dataset.index = ++index;
+                const newFormLi = document.createElement('li');
+                newFormLi.classList.add('mb-2');
+                newFormLi.innerHTML = newForm;
+                collectionHolder.appendChild(newFormLi);
+                addRemoveButton(newFormLi);
+            });
+
+            collectionHolder.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-remove-imagen')) {
+                    e.target.closest('li').remove();
+                }
+            });
+        }
+
 
         // --- SUBMIT DEL FORMULARIO PRINCIPAL (VEHÍCULOS) ---
         function attachFormSubmitListener() {
@@ -328,6 +409,16 @@
                 </tr>`;
             tablaBody.insertAdjacentHTML('beforeend', newRowHtml);
         }
+    });
+
+    $(document).ready(function() {
+        $('#tabla-vehiculos').DataTable({
+            "pageLength": 10,
+            "language": {
+                "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+            },
+            "order": [[ 0, "desc" ]]
+        });
     });
     </script>
 {% endblock %}
