@@ -21,6 +21,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Vehículo</th>
+                                <th>Patente</th>
                                 <th>Año</th>
                                 <th>Color</th>
                                 <th>Precio Venta</th>
@@ -36,6 +37,7 @@
                                         <span class="fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</span><br>
                                         <small>{{ vehiculo.version.name }}</small>
                                     </td>
+                                    <td class="vehiculo-plate">{{ vehiculo.plateNumber }}</td>
                                     <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
                                     <td class="vehiculo-color">{{ vehiculo.color }}</td>
                                     <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
@@ -288,7 +290,10 @@
                             addTableRow(data.vehiculo);
                         }
                         formModal.hide();
+                    }else{
+                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
                     }
+
                 })
                 .catch(errorData => {
                     if (errorData.errors) {

@@ -82,6 +82,9 @@ class Vehiculos
         $this->imagenesVehiculos = new ArrayCollection();
     }
 
+    #[ORM\Column(length: 20, nullable: true, unique: true)]
+    private ?string $plateNumber = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -339,6 +342,18 @@ class Vehiculos
             $reserva->setVehiculo($this);
         }
         $this->reserva = $reserva;
+        return $this;
+    }
+    
+    public function getPlateNumber(): ?string
+    {
+        return $this->plateNumber;
+    }
+
+    public function setPlateNumber(?string $plateNumber): static
+    {
+        $this->plateNumber = $plateNumber;
+
         return $this;
     }
 

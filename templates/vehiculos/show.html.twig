@@ -123,6 +123,10 @@
 							<span class="badge bg-primary">{{ vehiculo.state }}</span>
 						</li>
 						<li class="list-group-item d-flex justify-content-between">
+							<strong>Patente:</strong> 
+							<span>{{ vehiculo.plateNumber|default('N/A') }}</span>
+						</li>
+						<li class="list-group-item d-flex justify-content-between">
 							<strong>Año:</strong>
 							<span>{{ vehiculo.anio }}</span>
 						</li>

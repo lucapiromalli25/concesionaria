@@ -143,7 +143,7 @@ class HomeController extends AbstractController
             'activityFeed' => $activityFeed,
             'topSalespersons' => $topSalespersons,
             'ultimosIngresos' => $ultimosIngresos,
-            'salespersonChartData' => $salespersonChartData, // <-- ¡Aquí pasamos los nuevos datos!
+            'salespersonChartData' => $salespersonChartData,
         ]);
     }
 }

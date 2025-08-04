@@ -37,6 +37,10 @@ class VehiculosType extends AbstractType
             ->add('engine_number', TextType::class, [
                 'label' => 'Número de Motor',
             ])
+            ->add('plateNumber', TextType::class, [
+                'label' => 'Patente',
+                'required' => false,
+            ])
             ->add('color', TextType::class)
             ->add('kilometers', NumberType::class, [
                 'label' => 'Kilometraje',
