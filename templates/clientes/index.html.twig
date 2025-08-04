@@ -117,6 +117,8 @@
                             addTableRow(data.cliente);
                         }
                         formModal.hide();
+                    }else{
+                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
                     }
                 })
                 .catch(errorData => { /* ... Manejo de errores ... */ })

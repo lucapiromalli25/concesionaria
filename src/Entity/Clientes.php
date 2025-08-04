@@ -20,7 +20,7 @@ class Clientes
     #[ORM\Column(length: 255)]
     private ?string $last_name = null;
 
-    #[ORM\Column(length: 11)]
+    #[ORM\Column(length: 11, unique: true)]
     private ?string $document_number = null;
 
     #[ORM\Column(length: 50, nullable: true)]
