@@ -15,6 +15,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use App\Entity\Proveedores;
+use Vich\UploaderBundle\Form\Type\VichFileType; 
 
 class VehiculosType extends AbstractType
 {
@@ -27,6 +29,14 @@ class VehiculosType extends AbstractType
                 'choice_label' => fn(Versiones $v) => "{$v->getModelo()->getMarca()->getName()} - {$v->getModelo()->getName()} - {$v->getName()}",
                 'group_by' => fn(Versiones $v) => $v->getModelo()->getMarca()->getName() . ' / ' . $v->getModelo()->getName(),
                 'placeholder' => 'Seleccione una versión',
+            ])
+            ->add('supplier', EntityType::class, [
+                'class' => Proveedores::class,
+                'label' => 'Comprado a (Proveedor)',
+                'choice_label' => 'name',
+                'placeholder' => 'Seleccione un proveedor',
+                'required' => false,
+                'attr' => ['class' => 'form-select'] // Para que Select2 lo tome
             ])
             ->add('anio', NumberType::class, [
                 'label' => 'Año',
@@ -84,6 +94,13 @@ class VehiculosType extends AbstractType
                 'by_reference' => false,  // Muy importante para que Symfony llame a los métodos add/remove de la entidad Vehiculos
                 'label' => 'Imágenes del Vehículo',
                 'label_attr' => ['class' => 'fw-bold'],
+            ])
+            ->add('purchaseDocumentFile', VichFileType::class, [
+                'label' => 'Boleto de Compra (PDF)',
+                'required' => false,
+                'allow_delete' => true,
+                'delete_label' => 'Eliminar documento actual',
+                'download_uri' => false,
             ]);
     }
 

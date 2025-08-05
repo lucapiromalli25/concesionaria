@@ -22,16 +22,34 @@
         <div class="col-sm-6">{{ form_row(form.kilometers) }}</div>
         <div class="col-sm-6">{{ form_row(form.state) }}</div>
         <div class="col-sm-6">{{ form_row(form.entry_date) }}</div>
-        <div class="col-sm-6">{{ form_row(form.purchase_price) }}</div>
     </div>
-    {{ form_row(form.suggested_retail_price) }}
+    
+    <hr>
+    <h5 class="mb-3">Información de Compra</h5>
+
+    {# --- CAMPO PROVEEDOR AÑADIDO --- #}
+    <div class="form-group">
+        {{ form_label(form.supplier) }}
+        <div class="input-group">
+            {{ form_widget(form.supplier) }}
+            <button class="btn btn-primary" type="button" id="btn-add-nested-proveedor">
+                <i class="fa fa-plus"></i>
+            </button>
+        </div>
+        <div class="text-danger form-error-message mt-1" data-field-error="supplier"></div>
+    </div>
+    
+    <div class="row">
+        <div class="col-sm-6">{{ form_row(form.purchase_price) }}</div>
+        <div class="col-sm-6">{{ form_row(form.suggested_retail_price) }}</div>
+    </div>
+    
     {{ form_row(form.internal_observations) }}
     
     <hr>
     
     <div class="form-group">
         {{ form_label(form.imagenesVehiculos) }}
-        
         <ul class="list-unstyled" 
             id="imagenes-collection" 
             data-prototype="{{ form_widget(form.imagenesVehiculos.vars.prototype)|e('html_attr') }}"
@@ -43,7 +61,6 @@
                 </li>
             {% endfor %}
         </ul>
-        
         <button type="button" id="btn-add-imagen" class="btn btn-secondary btn-sm mt-2">
             <i class="fa fa-plus"></i> Agregar otra imagen
         </button>

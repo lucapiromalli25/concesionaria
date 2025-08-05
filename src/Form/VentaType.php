@@ -12,6 +12,8 @@ use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Vich\UploaderBundle\Form\Type\VichFileType;
 
 class VentaType extends AbstractType
 {
@@ -45,12 +47,25 @@ class VentaType extends AbstractType
                 'placeholder' => 'Seleccione un método',
                 'attr' => ['class' => 'form-select']
             ])
+            ->add('numberOfInstallments', NumberType::class, [
+                'label' => 'Cantidad de Cuotas',
+                'required' => false,
+                'attr' => ['placeholder' => 'Ej: 12'],
+                // Le damos un ID al contenedor para encontrarlo con JS
+                'row_attr' => ['id' => 'field-installments', 'class' => 'd-none'] 
+            ])
             ->add('observations', TextareaType::class, [
                 'label' => 'Observaciones',
                 'required' => false,
                 'attr' => ['rows' => 4]
             ])
-        ;
+            ->add('saleDocumentFile', VichFileType::class, [
+                'label' => 'Boleto de Venta (PDF)',
+                'required' => false,
+                'allow_delete' => true,
+                'delete_label' => 'Eliminar boleto actual',
+                'download_uri' => false,
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

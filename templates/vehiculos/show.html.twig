@@ -1,185 +1,163 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Detalle:
-	{{ vehiculo.version.modelo.marca.name }}
-	{{ vehiculo.version.modelo.name }}
-{% endblock %}
+{% block title %}Detalle: {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}{% endblock %}
 
 {% block body %}
-	<div class="page-header">
-		<h3 class="fw-bold mb-3">Detalle del Vehículo</h3>
-		<ul class="breadcrumbs">
-			<li class="nav-home">
-				<a href="{{ path('app_home') }}">
-					<i class="icon-home"></i>
-				</a>
-			</li>
-			<li class="separator">
-				<i class="icon-arrow-right"></i>
-			</li>
-			<li class="nav-item">
-				<a href="{{ path('app_vehiculos_index') }}">Vehículos</a>
-			</li>
-			<li class="separator">
-				<i class="icon-arrow-right"></i>
-			</li>
-			<li class="nav-item">
-				<a href="#">ID #{{ vehiculo.id }}</a>
-			</li>
-		</ul>
-	</div>
+<div class="page-header">
+    <h3 class="fw-bold mb-3">Detalle del Vehículo</h3>
+    <ul class="breadcrumbs">
+        <li class="nav-home"><a href="{{ path('app_home') }}"><i class="icon-home"></i></a></li>
+        <li class="separator"><i class="icon-arrow-right"></i></li>
+        <li class="nav-item"><a href="{{ path('app_vehiculos_index') }}">Vehículos</a></li>
+        <li class="separator"><i class="icon-arrow-right"></i></li>
+        <li class="nav-item"><a href="#">ID #{{ vehiculo.id }}</a></li>
+    </ul>
+</div>
 
-	<div
-		class="row">
-		{# --- COLUMNA IZQUIERDA: CARRUSEL DE IMÁGENES --- #}
-		<div class="col-md-7">
-			<div class="card">
-				<div
-					class="card-body">
-					{# El carrusel que ya tenías, para mostrar las imágenes #}
-					{% if vehiculo.imagenesVehiculos is not empty %}
-						<div id="vehicleCarousel" class="carousel slide" data-bs-ride="carousel">
-							<div class="carousel-inner">
-								{% for imagen in vehiculo.imagenesVehiculos %}
-									<div class="carousel-item {{ loop.first ? 'active' : '' }}">
-										<img src="{{ vich_uploader_asset(imagen, 'imageFile') }}" class="d-block w-100 rounded" alt="Imagen {{ loop.index }}">
-									</div>
-								{% endfor %}
-							</div>
-							<button class="carousel-control-prev" type="button" data-bs-target="#vehicleCarousel" data-bs-slide="prev">
-								<span class="carousel-control-prev-icon" aria-hidden="true"></span>
-							</button>
-							<button class="carousel-control-next" type="button" data-bs-target="#vehicleCarousel" data-bs-slide="next">
-								<span class="carousel-control-next-icon" aria-hidden="true"></span>
-							</button>
-						</div>
-					{% else %}
-						<div class="text-center p-5">
-							<i class="fas fa-image fa-4x text-muted"></i>
-							<p class="mt-3">Este vehículo no tiene imágenes cargadas.</p>
-						</div>
+<div class="row">
+    {# --- COLUMNA IZQUIERDA: CARRUSEL Y PESTAÑAS --- #}
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-body">
+                {% if vehiculo.imagenesVehiculos is not empty %}
+                    <div id="vehicleCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            {% for imagen in vehiculo.imagenesVehiculos %}
+                                <div class="carousel-item {{ loop.first ? 'active' : '' }}">
+                                    <img src="{{ vich_uploader_asset(imagen, 'imageFile') }}" class="d-block w-100 rounded" alt="Imagen {{ loop.index }}">
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#vehicleCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#vehicleCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+                    </div>
+                {% else %}
+                    <div class="text-center p-5"><i class="fas fa-image fa-4x text-muted"></i><p class="mt-3">Este vehículo no tiene imágenes cargadas.</p></div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation"><button class="nav-link active" id="caracteristicas-tab" data-bs-toggle="tab" data-bs-target="#caracteristicas" type="button" role="tab">Características</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link" id="observaciones-tab" data-bs-toggle="tab" data-bs-target="#observaciones" type="button" role="tab">Observaciones Internas</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial" type="button" role="tab">Historial</button></li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="caracteristicas" role="tabpanel"><p>{{ vehiculo.version.characteristics|default('No hay características especificadas.')|nl2br }}</p></div>
+                    <div class="tab-pane fade" id="observaciones" role="tabpanel"><p>{{ vehiculo.internalObservations|default('No hay observaciones internas.')|nl2br }}</p></div>
+                    <div class="tab-pane fade" id="historial" role="tabpanel">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Creado por:</strong> {{ vehiculo.createdBy.completeName|default('N/A') }} el {{ vehiculo.createdAt|date('d/m/Y H:i') }}</li>
+                            <li class="list-group-item"><strong>Última modif.:</strong> {{ vehiculo.updatedBy.completeName|default('N/A') }} el {{ vehiculo.updatedAt|date('d/m/Y H:i') }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- COLUMNA DERECHA: DATOS DEL VEHÍCULO Y VENTA --- #}
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</h4>
+                <p class="card-category mb-0">{{ vehiculo.version.name }}</p>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between"><strong>Precio Venta:</strong> <span class="fw-bold fs-5 text-success">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Estado:</strong> <span class="badge bg-primary">{{ vehiculo.state }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Patente:</strong> <span>{{ vehiculo.plateNumber|default('N/A') }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Año:</strong> <span>{{ vehiculo.anio }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Color:</strong> <span>{{ vehiculo.color }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Kilometraje:</strong> <span>{{ vehiculo.kilometers|number_format(0, ',', '.') }} km</span></li>
+					{% if vehiculo.purchaseDocumentName %}
+						<li class="list-group-item">
+							<strong>Boleto de Compra:</strong> 
+							<a href="{{ vich_uploader_asset(vehiculo, 'purchaseDocumentFile') }}" target="_blank" class="btn btn-info btn-sm">
+								<i class="fas fa-eye"></i> Ver Documento
+							</a>
+						</li>
 					{% endif %}
-				</div>
-			</div>
+				</ul>
 
-			{# --- SECCIÓN DE PESTAÑAS AÑADIDA --- #}
-			<div class="card">
-				<div class="card-header">
-					<ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
-						<li class="nav-item" role="presentation">
-							<button class="nav-link active" id="caracteristicas-tab" data-bs-toggle="tab" data-bs-target="#caracteristicas" type="button" role="tab">Características</button>
-						</li>
-						<li class="nav-item" role="presentation">
-							<button class="nav-link" id="observaciones-tab" data-bs-toggle="tab" data-bs-target="#observaciones" type="button" role="tab">Observaciones Internas</button>
-						</li>
-						<li class="nav-item" role="presentation">
-							<button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial" type="button" role="tab">Historial</button>
-						</li>
-					</ul>
-				</div>
-				<div class="card-body">
-					<div class="tab-content" id="myTabContent">
-						<div class="tab-pane fade show active" id="caracteristicas" role="tabpanel">
-							<p>{{ vehiculo.version.characteristics|default('No hay características especificadas.')|nl2br }}</p>
-						</div>
-						<div class="tab-pane fade" id="observaciones" role="tabpanel">
-							<p>{{ vehiculo.internalObservations|default('No hay observaciones internas.')|nl2br }}</p>
-						</div>
-						<div class="tab-pane fade" id="historial" role="tabpanel">
-							<ul class="list-group list-group-flush">
-								<li class="list-group-item">
-									<strong>Creado por:</strong>
-									{{ vehiculo.createdBy.completeName|default('N/A') }}
-									el
-									{{ vehiculo.createdAt|date('d/m/Y H:i') }}</li>
-								<li class="list-group-item">
-									<strong>Última modif.:</strong>
-									{{ vehiculo.updatedBy.completeName|default('N/A') }}
-									el
-									{{ vehiculo.updatedAt|date('d/m/Y H:i') }}</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+                {% if vehiculo.venta %}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <h5 class="card-title mb-0">Información de la Venta</h5>
+                        {% if vehiculo.venta.isPaymentOverdue() %}
+                            <span class="badge bg-danger">En Deuda</span>
+                        {% else %}
+                            <span class="badge bg-success">Al día</span>
+                        {% endif %}
+                    </div>
+                    <ul class="list-group list-group-flush mt-2">
+                        <li class="list-group-item d-flex justify-content-between"><strong>Vendido a:</strong> <span>{{ vehiculo.venta.cliente.firstName }} {{ vehiculo.venta.cliente.lastName }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Fecha:</strong> <span>{{ vehiculo.venta.saleDate|date('d/m/Y') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Precio Final:</strong> <span class="fw-bold text-success">${{ vehiculo.venta.finalSalePrice|number_format(2, ',', '.') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Total Pagado:</strong> <span>${{ vehiculo.venta.getTotalPaid()|number_format(2, ',', '.') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Saldo Pendiente:</strong> <span>${{ vehiculo.venta.getPendingBalance()|number_format(2, ',', '.') }}</span></li>
+                    </ul>
+                {% endif %}
+            </div>
+            <div class="card-footer text-end">
+                 <a href="{{ path('app_vehiculos_index') }}" class="btn btn-secondary">Volver al listado</a>
+            </div>
+        </div>
+    </div>
+</div>
 
-		{# --- COLUMNA DERECHA: DATOS DEL VEHÍCULO --- #}
-		<div class="col-md-5">
-			<div class="card">
-				<div class="card-header">
-					<h4 class="card-title">{{ vehiculo.version.modelo.marca.name }}
-						{{ vehiculo.version.modelo.name }}</h4>
-					<p class="card-category mb-0">{{ vehiculo.version.name }}</p>
-				</div>
-				<div class="card-body">
-					<ul class="list-group list-group-flush">
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Precio Venta:</strong>
-							<span class="fw-bold fs-5 text-success">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Estado:</strong>
-							<span class="badge bg-primary">{{ vehiculo.state }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Patente:</strong> 
-							<span>{{ vehiculo.plateNumber|default('N/A') }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Año:</strong>
-							<span>{{ vehiculo.anio }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Color:</strong>
-							<span>{{ vehiculo.color }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Kilometraje:</strong>
-							<span>{{ vehiculo.kilometers|number_format(0, ',', '.') }}
-								km</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Chasis (VIN):</strong>
-							<span>{{ vehiculo.chassisNumber }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Motor:</strong>
-							<span>{{ vehiculo.engineNumber }}</span>
-						</li>
-						<li class="list-group-item d-flex justify-content-between">
-							<strong>Fecha de Ingreso:</strong>
-							<span>{{ vehiculo.entryDate ? vehiculo.entryDate|date('d/m/Y') : 'N/A' }}</span>
-						</li>
-					</ul>
-					{% if vehiculo.venta %}
-						<hr>
-						<h5 class="card-title mt-3">Información de la Venta</h5>
-						<ul class="list-group list-group-flush">
-							<li class="list-group-item d-flex justify-content-between">
-								<strong>Vendido a:</strong>
-								<span>{{ vehiculo.venta.cliente.firstName }}
-									{{ vehiculo.venta.cliente.lastName }}</span>
-							</li>
-							<li class="list-group-item d-flex justify-content-between">
-								<strong>Vendedor:</strong>
-								<span>{{ vehiculo.venta.vendedor.completeName }}</span>
-							</li>
-							<li class="list-group-item d-flex justify-content-between">
-								<strong>Fecha de Venta:</strong>
-								<span>{{ vehiculo.venta.saleDate|date('d/m/Y') }}</span>
-							</li>
-							<li class="list-group-item d-flex justify-content-between">
-								<strong>Precio Final:</strong>
-								<span class="fw-bold text-success">${{ vehiculo.venta.finalSalePrice|number_format(2, ',', '.') }}</span>
-							</li>
-						</ul>
-					{% endif %}
-				</div>
-				<div class="card-footer text-end">
-					<a href="{{ path('app_vehiculos_index') }}" class="btn btn-secondary">Volver al listado</a>
-				</div>
-			</div>
-		</div>
-	</div>
+{# --- NUEVA TABLA DE CUOTAS (SI EXISTE VENTA FINANCIADA) --- #}
+{% if vehiculo.venta and vehiculo.venta.paymentMethod == 'Financiado' %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title">Plan de Pagos</h4></div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th># Cuota</th>
+                            <th>Vencimiento</th>
+                            <th>Monto</th>
+                            <th>Estado</th>
+                            <th>Fecha de Pago</th>
+                            <th class="text-end">Comprobante</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for cuota in vehiculo.venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
+                        <tr class="{{ vehiculo.venta.isPaymentOverdue() and cuota.status == 'Pendiente' and cuota.dueDate < date('now') ? 'table-danger' : '' }}">
+                            <td><strong>{{ cuota.installmentNumber }}</strong></td>
+                            <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
+                            <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
+                            <td>
+                                {% if cuota.status == 'Pagada' %}
+                                    <span class="badge bg-success">Pagada</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
+                            <td class="text-end">
+                                {% if cuota.receiptName %}
+                                    <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i> Ver
+                                    </a>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
