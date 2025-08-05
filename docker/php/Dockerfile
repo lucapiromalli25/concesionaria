@@ -18,6 +18,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Establecer el directorio de trabajo
 WORKDIR /var/www/symfony
 
+COPY ./docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Copiar el código de la aplicación (opcional, pero buena práctica)
 COPY . .
 

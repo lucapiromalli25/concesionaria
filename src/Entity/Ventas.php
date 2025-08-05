@@ -5,8 +5,13 @@ namespace App\Entity;
 use App\Repository\VentasRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Symfony\Component\HttpFoundation\File\File; // <-- AÑADE ESTE IMPORT
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: VentasRepository::class)]
+#[Vich\Uploadable]
 class Ventas
 {
     #[ORM\Id]
@@ -50,6 +55,23 @@ class Ventas
 
     #[ORM\ManyToOne]
     private ?User $updated_by = null;
+
+    #[ORM\OneToMany(mappedBy: 'venta', targetEntity: Cuotas::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $cuotas;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $numberOfInstallments = null;
+
+    #[Vich\UploadableField(mapping: 'sale_documents', fileNameProperty: 'saleDocumentName')]
+    private ?File $saleDocumentFile = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $saleDocumentName = null;
+
+    public function __construct()
+    {
+        $this->cuotas = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -198,5 +220,104 @@ class Ventas
         $this->updated_by = $updated_by;
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Cuotas>
+     */
+    public function getCuotas(): Collection
+    {
+        return $this->cuotas;
+    }
+
+    public function addCuota(Cuotas $cuota): static
+    {
+        if (!$this->cuotas->contains($cuota)) {
+            $this->cuotas->add($cuota);
+            $cuota->setVenta($this);
+        }
+        return $this;
+    }
+
+    public function removeCuota(Cuotas $cuota): static
+    {
+        if ($this->cuotas->removeElement($cuota)) {
+            if ($cuota->getVenta() === $this) {
+                $cuota->setVenta(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getNumberOfInstallments(): ?int
+    {
+        return $this->numberOfInstallments;
+    }
+
+    public function setNumberOfInstallments(?int $numberOfInstallments): static
+    {
+        $this->numberOfInstallments = $numberOfInstallments;
+
+        return $this;
+    }
+
+    /**
+     * Verifica si hay alguna cuota pendiente cuya fecha de vencimiento ya pasó.
+     */
+    public function isPaymentOverdue(): bool
+    {
+        $today = new \DateTime('today');
+        foreach ($this->cuotas as $cuota) {
+            if ($cuota->getStatus() === 'Pendiente' && $cuota->getDueDate() < $today) {
+                return true; // Encontramos una cuota atrasada
+            }
+        }
+        return false; // Todas las cuotas pendientes están al día
+    }
+
+    /**
+     * Calcula el monto total que ya ha sido pagado.
+     */
+    public function getTotalPaid(): float
+    {
+        $total = 0;
+        foreach ($this->cuotas as $cuota) {
+            if ($cuota->getStatus() === 'Pagada') {
+                $total += $cuota->getAmount();
+            }
+        }
+        return $total;
+    }
+
+    /**
+     * Calcula el saldo pendiente de pago.
+     */
+    public function getPendingBalance(): float
+    {
+        return $this->getFinalSalePrice() - $this->getTotalPaid();
+    }
+
+    public function setSaleDocumentFile(?File $saleDocumentFile = null): void
+    {
+        $this->saleDocumentFile = $saleDocumentFile;
+        if (null !== $saleDocumentFile) {
+            // Es necesario para que el bundle sepa que hubo un cambio
+            $this->setUpdatedAt(new \DateTimeImmutable());
+        }
+    }
+
+    public function getSaleDocumentFile(): ?File
+    {
+        return $this->saleDocumentFile;
+    }
+
+    public function setSaleDocumentName(?string $saleDocumentName): void
+    {
+        $this->saleDocumentName = $saleDocumentName;
+    }
+
+    public function getSaleDocumentName(): ?string
+    {
+        return $this->saleDocumentName;
     }
 }

@@ -1,0 +1,19 @@
+{% set form_action = form.vars.value.id ? path('app_proveedores_edit', {'id': form.vars.value.id}) : path('app_proveedores_new') %}
+{{ form_start(form, {'action': form_action, 'attr': {'id': 'formProveedor'}}) }}
+    {{ form_row(form.name) }}
+    <div class="row">
+        <div class="col-sm-6">{{ form_row(form.documentNumber) }}</div>
+        <div class="col-sm-6">{{ form_row(form.contactPerson) }}</div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">{{ form_row(form.phone) }}</div>
+        <div class="col-sm-6">{{ form_row(form.email) }}</div>
+    </div>
+    {{ form_row(form.address) }}
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> Guardar
+        </button>
+    </div>
+{{ form_end(form) }}

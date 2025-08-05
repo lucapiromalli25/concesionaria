@@ -1,0 +1,179 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Detalle de Venta #{{ venta.id }}{% endblock %}
+
+{% block body %}
+<div class="page-header">
+    <h3 class="fw-bold mb-3">Detalle de Venta</h3>
+    <ul class="breadcrumbs">
+        <li class="nav-home"><a href="{{ path('app_home') }}"><i class="icon-home"></i></a></li>
+        <li class="separator"><i class="icon-arrow-right"></i></li>
+        <li class="nav-item"><a href="{{ path('app_ventas_index') }}">Ventas</a></li>
+        <li class="separator"><i class="icon-arrow-right"></i></li>
+        <li class="nav-item"><a href="#">Venta #{{ venta.id }}</a></li>
+    </ul>
+</div>
+
+<div class="row">
+    {# --- DATOS PRINCIPALES DE LA VENTA --- #}
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title">Información General</h4></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Vehículo:</strong> <a href="{{ path('app_vehiculos_show', {'id': venta.vehiculo.id}) }}">{{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}</a><br>
+                        <strong>Cliente:</strong> {{ venta.cliente.firstName }} {{ venta.cliente.lastName }} (DNI: {{ venta.cliente.documentNumber }})
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Fecha de Venta:</strong> {{ venta.saleDate|date('d/m/Y') }}<br>
+                        <strong>Vendedor:</strong> {{ venta.vendedor.completeName }}<br>
+                        {% if venta.saleDocumentName %}
+                            <strong>Boleto de Venta:</strong> 
+                            <a href="{{ vich_uploader_asset(venta, 'saleDocumentFile') }}" target="_blank" class="btn btn-info btn-sm">
+                                <i class="fas fa-eye"></i> Ver Documento
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- TABLA DE CUOTAS --- #}
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title">Plan de Pagos</h4></div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th># Cuota</th>
+                            <th>Fecha Vencimiento</th>
+                            <th>Monto</th>
+                            <th>Estado</th>
+                            <th>Fecha de Pago</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for cuota in venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
+                        <tr>
+                            <td><strong>{{ cuota.installmentNumber }}</strong></td>
+                            <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
+                            <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
+                            <td>
+                                {% if cuota.status == 'Pagada' %}
+                                    <span class="badge bg-success">Pagada</span>
+                                {% elseif cuota.status == 'Atrasada' %}
+                                    <span class="badge bg-danger">Atrasada</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
+                            <td class="text-end">
+                                {% if cuota.status == 'Pendiente' %}
+                                    <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
+                                        Registrar Pago
+                                    </button>
+                                {% endif %}
+                                {% if cuota.receiptName %}
+                                    <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-info btn-sm">
+                                        Ver Comprobante
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">Esta venta no tiene un plan de cuotas asociado.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="paymentModalLabel">Registrar Pago de Cuota</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="payment-modal-body-content">
+        {# El formulario para registrar el pago se cargará aquí #}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        const paymentModalBody = document.getElementById('payment-modal-body-content');
+        const paymentModalTitle = document.getElementById('paymentModalLabel');
+        const tablaBody = document.querySelector('tbody');
+
+        tablaBody.addEventListener('click', function(e) {
+            const button = e.target.closest('.btn-register-payment');
+            if (button) {
+                const cuotaId = button.dataset.cuotaId;
+                paymentModalTitle.textContent = `Registrar Pago de Cuota #${cuotaId}`;
+                const url = `{{ path('app_cuotas_register_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
+                
+                fetch(url)
+                    .then(r => r.text()).then(html => {
+                        paymentModalBody.innerHTML = html;
+                        paymentModal.show();
+                        attachPaymentFormSubmitListener();
+                    });
+            }
+        });
+
+        function attachPaymentFormSubmitListener() {
+            const form = document.getElementById('formPayment');
+            if (!form) return;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = form.querySelector('button[type="submit"]');
+                const spinner = btn.querySelector('.spinner-border');
+                spinner.classList.remove('d-none');
+                btn.disabled = true;
+
+                fetch(form.action, { method: 'POST', body: new FormData(form), headers: {'X-Requested-with': 'XMLHttpRequest'} })
+                .then(r => r.json()).then(data => {
+                    if (data.status === 'success') {
+                        paymentModal.hide();
+                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                        
+                        // Actualizar la fila en la tabla dinámicamente
+                        const row = tablaBody.querySelector(`button[data-cuota-id="${data.cuota.id}"]`).closest('tr');
+                        if(row) {
+                            // Actualizar estado
+                            row.children[3].innerHTML = `<span class="badge bg-success">${data.cuota.status}</span>`;
+                            // Actualizar fecha de pago
+                            row.children[4].textContent = data.cuota.paymentDate;
+                            // Reemplazar botón de pago por el de ver comprobante
+                            let actionsCell = row.children[5];
+                            actionsCell.innerHTML = `<a href="${data.cuota.receiptUrl}" target="_blank" class="btn btn-info btn-sm">Ver Comprobante</a>`;
+                        }
+                    } else {
+                        // ... manejo de errores ...
+                    }
+                })
+                .finally(() => {
+                    spinner.classList.add('d-none');
+                    btn.disabled = false;
+                });
+            });
+        }
+    });
+    </script>
+{% endblock %}

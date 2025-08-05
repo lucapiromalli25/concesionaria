@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Repository\VentasRepository;
+use App\Entity\Cuotas;
 
 #[Route('/ventas')]
 #[IsGranted('ROLE_SALESPERSON')]
@@ -29,16 +30,16 @@ class VentaController extends AbstractController
     #[Route('/new/{id}', name: 'app_ventas_new', methods: ['GET', 'POST'])]
     public function new(Request $request, Vehiculos $vehiculo, EntityManagerInterface $entityManager): Response
     {
-        // Verificación para no vender un auto ya vendido
+        // Verificación para no vender un auto que no está en stock o ya vendido
         if (!in_array($vehiculo->getState(), ['En Stock', 'Reservado'])) {
             $this->addFlash('danger', 'Este vehículo no está disponible para la venta.');
             return $this->redirectToRoute('app_vehiculos_index');
         }
 
         $venta = new Ventas();
-        $venta->setVehiculo($vehiculo); // Asocia el vehículo a la venta
+        $venta->setVehiculo($vehiculo);
 
-        // 2. (MEJORA UX) SI EL AUTO ESTÁ RESERVADO, PRE-SELECCIONAMOS AL CLIENTE
+        // Si el auto está reservado, pre-seleccionamos al cliente y el precio
         if ($reserva = $vehiculo->getReserva()) {
             $venta->setCliente($reserva->getCliente());
             $venta->setFinalSalePrice($vehiculo->getSuggestedRetailPrice());
@@ -51,29 +52,63 @@ class VentaController extends AbstractController
             // Asignar el vendedor (usuario actual)
             $venta->setVendedor($this->getUser());
             
-            // CAMBIAR EL ESTADO DEL VEHÍCULO
+            // Cambiar el estado del vehículo a 'Vendido'
             $vehiculo->setState('Vendido');
 
+            // Si existía una reserva, se marca como 'Completada'
             if ($reserva = $vehiculo->getReserva()) {
                 $reserva->setStatus('Completada');
             }
 
+            // Lógica de auditoría para la Venta
             $venta->setCreatedBy($this->getUser());
             $venta->setCreatedAt(new \DateTimeImmutable());
             $venta->setUpdatedBy($this->getUser());
             $venta->setUpdatedAt(new \DateTimeImmutable());
-
             $entityManager->persist($venta);
-            // No hace falta persistir el vehículo, Doctrine ya lo está observando
-            $entityManager->flush();
+
+            // --- LÓGICA PARA GENERAR CUOTAS ---
+            if ($venta->getPaymentMethod() === 'Financiado' && $venta->getNumberOfInstallments() > 0) {
+                $numeroDeCuotas = $venta->getNumberOfInstallments();
+                $montoCuota = $venta->getFinalSalePrice() / $numeroDeCuotas;
+                $fechaVenta = $venta->getSaleDate();
+
+                for ($i = 1; $i <= $numeroDeCuotas; $i++) {
+                    $cuota = new Cuotas();
+                    $cuota->setVenta($venta);
+                    $cuota->setInstallmentNumber($i);
+                    $cuota->setAmount($montoCuota);
+                    $cuota->setStatus('Pendiente');
+                    
+                    // Calcula la fecha de vencimiento para el mes siguiente
+                    $fechaVencimiento = (clone $fechaVenta)->modify("first day of +{$i} month");
+                    $cuota->setDueDate($fechaVencimiento);
+
+                    // La auditoría de la cuota también debería ser manejada
+                    // (Si tienes un Listener, lo hará automático, si no, hay que añadirla aquí)
+                    
+                    $entityManager->persist($cuota);
+                }
+            }
+            // --- FIN DE LA LÓGICA DE CUOTAS ---
+
+            $entityManager->flush(); // Guarda la venta Y todas las cuotas a la vez
 
             $this->addFlash('success', '¡Venta registrada con éxito!');
-            return $this->redirectToRoute('app_vehiculos_index');
+            return $this->redirectToRoute('app_ventas_index');
         }
 
         return $this->render('ventas/new.html.twig', [
             'vehiculo' => $vehiculo,
             'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/{id}', name: 'app_ventas_show', methods: ['GET'])]
+    public function show(Ventas $venta): Response
+    {
+        return $this->render('ventas/show.html.twig', [
+            'venta' => $venta,
         ]);
     }
 }

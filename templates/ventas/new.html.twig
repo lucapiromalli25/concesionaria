@@ -76,63 +76,79 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const clienteSelect = $('#venta_cliente');
-            clienteSelect.select2({
-                placeholder: 'Buscar cliente...',
-                width: '100%'
-            });
-
-            const nestedModalEl = document.getElementById('nestedFormModal');
-            const nestedFormModal = new bootstrap.Modal(nestedModalEl);
-            const nestedModalBody = document.getElementById('nested-modal-body-content');
-
-            // Abrir modal anidado para crear cliente
-            document.getElementById('btn-add-nested-cliente').addEventListener('click', function() {
-                fetch('{{ path('app_clientes_new') }}')
-                    .then(r => r.text()).then(html => {
-                        nestedModalBody.innerHTML = html;
-                        nestedFormModal.show();
-                        attachNestedFormSubmitListener();
-                    });
-            });
-
-            // Manejar el envío del formulario de nuevo cliente
-            function attachNestedFormSubmitListener() {
-                const nestedForm = document.getElementById('formCliente');
-                if (!nestedForm) return;
-
-                nestedForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const btn = nestedForm.querySelector('button[type="submit"]');
-                    const spinner = btn.querySelector('.spinner-border');
-                    spinner.classList.remove('d-none');
-                    btn.disabled = true;
-
-                    fetch(nestedForm.action, { method: 'POST', body: new FormData(nestedForm), headers: {'X-Requested-with': 'XMLHttpRequest'} })
-                    .then(r => r.json()).then(data => {
-                        if (data.status === 'success') {
-                            const newClient = data.cliente;
-                            const newOption = new Option(newClient.displayText, newClient.id, true, true);
-                            
-                            clienteSelect.append(newOption).trigger('change');
-                            
-                            nestedFormModal.hide();
-                            $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        } else {
-                            // Manejo de errores en el form anidado
-                            Object.keys(data.errors).forEach(fieldName => {
-                                const container = nestedForm.querySelector(`[data-field-error="${fieldName}"]`);
-                                if (container) { container.innerHTML = `<p class="mb-0">${data.errors[fieldName].join(', ')}</p>`; }
-                            });
-                        }
-                    })
-                    .finally(() => {
-                        spinner.classList.add('d-none');
-                        btn.disabled = false;
-                    });
-                });
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- INICIALIZACIÓN DE ELEMENTOS ---
+        const clienteSelect = $('#venta_cliente');
+        clienteSelect.select2({
+            placeholder: 'Buscar cliente...',
+            width: '100%'
         });
+
+        const nestedModalEl = document.getElementById('nestedFormModal');
+        const nestedFormModal = new bootstrap.Modal(nestedModalEl);
+        const nestedModalBody = document.getElementById('nested-modal-body-content');
+
+        // --- LÓGICA PARA CAMPO DE CUOTAS CONDICIONAL ---
+        const paymentMethodSelect = document.getElementById('venta_payment_method');
+        const installmentsField = document.getElementById('field-installments');
+
+        function toggleInstallmentsField() {
+            if (installmentsField && paymentMethodSelect.value === 'Financiado') {
+                installmentsField.classList.remove('d-none');
+            } else if (installmentsField) {
+                installmentsField.classList.add('d-none');
+                document.getElementById('venta_numberOfInstallments').value = ''; 
+            }
+        }
+        
+        toggleInstallmentsField(); // Ejecutar al cargar la página
+        paymentMethodSelect.addEventListener('change', toggleInstallmentsField);
+        // --- FIN DE LA LÓGICA CONDICIONAL ---
+
+        // --- MODAL ANIDADO PARA CREAR CLIENTE ---
+        document.getElementById('btn-add-nested-cliente').addEventListener('click', function() {
+            fetch('{{ path('app_clientes_new') }}')
+                .then(r => r.text()).then(html => {
+                    nestedModalBody.innerHTML = html;
+                    nestedFormModal.show();
+                    attachNestedFormSubmitListener();
+                });
+        });
+
+        function attachNestedFormSubmitListener() {
+            const nestedForm = document.getElementById('formCliente');
+            if (!nestedForm) return;
+
+            nestedForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = nestedForm.querySelector('button[type="submit"]');
+                const spinner = btn.querySelector('.spinner-border');
+                spinner.classList.remove('d-none');
+                btn.disabled = true;
+
+                fetch(nestedForm.action, { method: 'POST', body: new FormData(nestedForm), headers: {'X-Requested-with': 'XMLHttpRequest'} })
+                .then(r => r.json()).then(data => {
+                    if (data.status === 'success') {
+                        const newClient = data.cliente;
+                        const newOption = new Option(newClient.displayText, newClient.id, true, true);
+                        
+                        clienteSelect.append(newOption).trigger('change');
+                        
+                        nestedFormModal.hide();
+                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                    } else {
+                        Object.keys(data.errors).forEach(fieldName => {
+                            const container = nestedForm.querySelector(`[data-field-error="${fieldName}"]`);
+                            if (container) { container.innerHTML = `<p class="mb-0">${data.errors[fieldName].join(', ')}</p>`; }
+                        });
+                    }
+                })
+                .finally(() => {
+                    spinner.classList.add('d-none');
+                    btn.disabled = false;
+                });
+            });
+        }
+    });
     </script>
 {% endblock %}

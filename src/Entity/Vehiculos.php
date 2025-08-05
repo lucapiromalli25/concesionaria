@@ -8,8 +8,12 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Entity\Reservas;
+use App\Entity\Proveedores;
+use Symfony\Component\HttpFoundation\File\File;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: VehiculosRepository::class)]
+#[Vich\Uploadable]
 class Vehiculos
 {
     #[ORM\Id]
@@ -47,7 +51,7 @@ class Vehiculos
     #[ORM\Column(type: Types::DECIMAL, precision: 20, scale: 2, nullable: true)]
     private ?string $suggested_retail_price = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $internal_observations = null;
 
     #[ORM\Column]
@@ -84,6 +88,16 @@ class Vehiculos
 
     #[ORM\Column(length: 20, nullable: true, unique: true)]
     private ?string $plateNumber = null;
+
+    #[ORM\ManyToOne(inversedBy: 'vehiculosComprados')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Proveedores $supplier = null;
+
+    #[Vich\UploadableField(mapping: 'purchase_documents', fileNameProperty: 'purchaseDocumentName')]
+    private ?File $purchaseDocumentFile = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $purchaseDocumentName = null;
 
     public function getId(): ?int
     {
@@ -355,6 +369,42 @@ class Vehiculos
         $this->plateNumber = $plateNumber;
 
         return $this;
+    }
+
+    public function getSupplier(): ?Proveedores
+    {
+        return $this->supplier;
+    }
+
+    public function setSupplier(?Proveedores $supplier): static
+    {
+        $this->supplier = $supplier;
+
+        return $this;
+    }
+
+    public function setPurchaseDocumentFile(?File $purchaseDocumentFile = null): void
+    {
+        $this->purchaseDocumentFile = $purchaseDocumentFile;
+        if (null !== $purchaseDocumentFile) {
+            // Es necesario para que el bundle sepa que hubo un cambio
+            $this->setUpdatedAt(new \DateTimeImmutable());
+        }
+    }
+
+    public function getPurchaseDocumentFile(): ?File
+    {
+        return $this->purchaseDocumentFile;
+    }
+
+    public function setPurchaseDocumentName(?string $purchaseDocumentName): void
+    {
+        $this->purchaseDocumentName = $purchaseDocumentName;
+    }
+
+    public function getPurchaseDocumentName(): ?string
+    {
+        return $this->purchaseDocumentName;
     }
 
 }

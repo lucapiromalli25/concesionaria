@@ -9,3 +9,15 @@ vich_uploader:
             inject_on_load: false
             delete_on_update: true
             delete_on_remove: true
+        receipt_files: # <-- AÑADE ESTE BLOQUE
+            uri_prefix: /uploads/receipts
+            upload_destination: '%kernel.project_dir%/public/uploads/receipts'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+        purchase_documents:
+            uri_prefix: /uploads/documents/purchases
+            upload_destination: '%kernel.project_dir%/public/uploads/documents/purchases'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+        sale_documents:
+            uri_prefix: /uploads/documents/sales
+            upload_destination: '%kernel.project_dir%/public/uploads/documents/sales'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer

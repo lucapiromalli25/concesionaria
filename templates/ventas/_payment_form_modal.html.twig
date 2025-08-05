@@ -1,0 +1,13 @@
+{% set form_action = path('app_cuotas_register_payment', {'id': cuota.id}) %}
+{{ form_start(form, {'action': form_action, 'attr': {'id': 'formPayment', 'enctype': 'multipart/form-data'}}) }}
+    
+    {{ form_row(form.paymentDate) }}
+    {{ form_row(form.receiptFile) }}
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> Confirmar Pago
+        </button>
+    </div>
+{{ form_end(form) }}
