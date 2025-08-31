@@ -9,14 +9,22 @@
             <div class="card-header">
                 <div class="d-flex align-items-center">
                     <h4 class="card-title">Listado de Vehículos</h4>
-                    <button id="btn-nuevo-vehiculo" class="btn btn-primary btn-round ms-auto">
-                        <i class="fa fa-plus"></i> Agregar Vehículo
-                    </button>
+                    {# --- BOTÓN AÑADIDO --- #}
+                    <a href="{{ path('app_report_export_vehicles') }}" class="btn btn-secondary btn-round ms-auto me-2">
+                        <i class="fas fa-file-excel"></i>
+                        Exportar a Excel
+                    </a>
+
+                    {% if is_granted('ROLE_MANAGER') %}
+                        <button id="btn-nuevo-vehiculo" class="btn btn-primary btn-round">
+                            <i class="fa fa-plus"></i> Agregar Vehículo
+                        </button>
+                    {% endif %}
                 </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabla-vehiculos">
+                    <table id="tabla-vehiculos" class="display table table-striped table-hover">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -29,62 +37,52 @@
                                 <th class="text-end">Acciones</th>
                             </tr>
                         </thead>
+                        <tfoot>
+                            <tr>
+                                <th>ID</th>
+                                <th>Vehículo</th>
+                                <th>Patente</th>
+                                <th>Año</th>
+                                <th>Color</th>
+                                <th>Precio Venta</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </tfoot>
                         <tbody>
-                            {% for vehiculo in vehiculos %}
-                                <tr data-id="{{ vehiculo.id }}">
-                                    <td>{{ vehiculo.id }}</td>
-                                    <td class="vehiculo-desc">
-                                        <span class="fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</span><br>
-                                        <small>{{ vehiculo.version.name }}</small>
-                                    </td>
-                                    <td class="vehiculo-plate">{{ vehiculo.plateNumber }}</td>
-                                    <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
-                                    <td class="vehiculo-color">{{ vehiculo.color }}</td>
-                                    <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
-                                    
-                                    {# --- NUEVA CELDA PARA EL ESTADO --- #}
-                                    <td>
-                                        {% if vehiculo.state == 'Vendido' %}
-                                            <span class="badge bg-success">Vendido</span>
-                                        {% elseif vehiculo.state == 'Reservado' %}
-                                            <span class="badge bg-warning text-dark">Reservado</span>
-                                        {% else %}
-                                            <span class="badge bg-info">En Stock</span>
-                                        {% endif %}
-                                    </td>
-
-                                    {# --- NUEVA CELDA DE ACCIONES CON DROPDOWN --- #}
-                                    <td class="text-end">
-                                        <div class="dropdown">
-                                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton{{ vehiculo.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                Acciones
-                                            </button>
-                                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ vehiculo.id }}">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}">Ver Detalles</a>
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item btn-editar">Editar</button>
-                                                </li>
-                                                <li>
-                                                {% if vehiculo.state in ['En Stock', 'Reservado'] %}
-                                                    <hr class="dropdown-divider"></li>
-                                                {% endif %}
-                                                
-                                                {% if vehiculo.state == 'En Stock' %}
-                                                    <li><a class="dropdown-item" href="{{ path('app_reservas_new', {'id': vehiculo.id}) }}">Reservar</a></li>
-                                                {% endif %}
-                                                
-                                                {% if vehiculo.state in ['En Stock', 'Reservado'] %}
-                                                    <li><a class="dropdown-item" href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}">Vender</a></li>
-                                                {% endif %}
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% else %}
-                                <tr id="fila-sin-vehiculos"><td colspan="7" class="text-center">No se encontraron vehículos</td></tr>
-                            {% endfor %}
+                        {% for vehiculo in vehiculos %}
+                            <tr data-id="{{ vehiculo.id }}">
+                                <td>{{ vehiculo.id }}</td>
+                                <td class="vehiculo-desc">
+                                    <span class="fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</span><br>
+                                    <small>{{ vehiculo.version.name }}</small>
+                                </td>
+                                <td class="vehiculo-plate">{{ vehiculo.plateNumber }}</td>
+                                <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
+                                <td class="vehiculo-color">{{ vehiculo.color }}</td>
+                                <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
+                                <td>
+                                    {% if vehiculo.state == 'Vendido' %}<span class="badge bg-success">Vendido</span>
+                                    {% elseif vehiculo.state == 'Reservado' %}<span class="badge bg-warning text-dark">Reservado</span>
+                                    {% else %}<span class="badge bg-info">En Stock</span>{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Acciones</button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}">Ver Detalles</a></li>
+                                            <li><button class="dropdown-item btn-editar">Editar</button></li>
+                                            {% if vehiculo.state in ['En Stock', 'Reservado'] %}<hr class="dropdown-divider">{% endif %}
+                                            {% if vehiculo.state == 'En Stock' %}<li><a class="dropdown-item" href="{{ path('app_reservas_new', {'id': vehiculo.id}) }}">Reservar</a></li>{% endif %}
+                                            {% if vehiculo.state in ['En Stock', 'Reservado'] %}<li><a class="dropdown-item" href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}">Vender</a></li>{% endif %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            {# DataTables manejará la fila vacía, pero la dejamos por si acaso #}
+                            <tr id="fila-sin-vehiculos"><td colspan="8" class="text-center">No se encontraron vehículos</td></tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -93,45 +91,17 @@
     </div>
 </div>
 
-<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="formModalLabel">Nuevo Vehículo</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modal-body-content"></div>
-    </div>
-  </div>
-</div>
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="formModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="modal-body-content"></div></div></div></div>
 
-<div class="modal fade" id="nestedFormModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="nestedFormModalLabel">Nueva Versión</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="nested-modal-body-content">
-        {# El contenido del formulario de versión se cargará aquí #}
-      </div>
-    </div>
-  </div>
-</div>
+<div class="modal fade" id="nestedFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="nestedFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="nested-modal-body-content"></div></div></div></div>
 
-<div class="modal fade" id="superNestedFormModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="superNestedFormModalLabel">Nuevo Modelo</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="super-nested-modal-body-content"></div>
-    </div>
-  </div>
-</div>
+<div class="modal fade" id="superNestedFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="superNestedFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="super-nested-modal-body-content"></div></div></div></div>
 
+<div class="modal fade" id="ultraNestedFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="ultraNestedFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="ultra-nested-modal-body-content"></div></div></div></div>
+
+<div class="modal fade" id="supplierFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="supplierFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="supplier-modal-body-content"></div></div></div></div>
 {% endblock %}
+
 {% block javascripts %}
     {{ parent() }}
     <script>
@@ -141,7 +111,6 @@
         const formModal = new bootstrap.Modal(mainModalEl);
         const modalBody = document.getElementById('modal-body-content');
         const modalTitle = document.getElementById('formModalLabel');
-        const tablaBody = document.querySelector('#tabla-vehiculos tbody');
         
         const nestedModalEl = document.getElementById('nestedFormModal');
         const nestedFormModal = new bootstrap.Modal(nestedModalEl);
@@ -152,88 +121,110 @@
         const superNestedFormModal = new bootstrap.Modal(superNestedModalEl);
         const superNestedModalBody = document.getElementById('super-nested-modal-body-content');
         const superNestedModalTitle = document.getElementById('superNestedFormModalLabel');
+        
+        const supplierModalEl = document.getElementById('supplierFormModal');
+        const supplierFormModal = new bootstrap.Modal(supplierModalEl);
+        const supplierModalBody = document.getElementById('supplier-modal-body-content');
+        const supplierModalTitle = document.getElementById('supplierFormModalLabel');
+        
+        const ultraNestedModalEl = document.getElementById('ultraNestedFormModal');
+        const ultraNestedFormModal = new bootstrap.Modal(ultraNestedModalEl);
+        const ultraNestedModalBody = document.getElementById('ultra-nested-modal-body-content');
+        const ultraNestedModalTitle = document.getElementById('ultraNestedFormModalLabel');
 
         // --- LÓGICA PARA ATENUAR MODALES ---
         nestedModalEl.addEventListener('show.bs.modal', () => mainModalEl.classList.add('modal-underlay'));
         nestedModalEl.addEventListener('hidden.bs.modal', () => mainModalEl.classList.remove('modal-underlay'));
         superNestedModalEl.addEventListener('show.bs.modal', () => nestedModalEl.classList.add('modal-underlay'));
         superNestedModalEl.addEventListener('hidden.bs.modal', () => nestedModalEl.classList.remove('modal-underlay'));
+        supplierModalEl.addEventListener('show.bs.modal', () => mainModalEl.classList.add('modal-underlay'));
+        supplierModalEl.addEventListener('hidden.bs.modal', () => mainModalEl.classList.remove('modal-underlay'));
+        ultraNestedModalEl.addEventListener('show.bs.modal', () => superNestedModalEl.classList.add('modal-underlay'));
+        ultraNestedModalEl.addEventListener('hidden.bs.modal', () => superNestedModalEl.classList.remove('modal-underlay'));
+
 
         function initializeSelect2(selector) {
             $(selector).select2({ dropdownParent: $(selector).closest('.modal') });
         }
 
-        // --- NIVEL 1: ABRIR MODAL DE VEHÍCULOS ---
-        const newVehicleButton = document.getElementById('btn-nuevo-vehiculo');
-        if (newVehicleButton) {
-            newVehicleButton.addEventListener('click', function() {
-                modalTitle.textContent = 'Nuevo Vehículo';
-                fetch('{{ path('app_vehiculos_new') }}')
-                    .then(r => r.text()).then(html => {
-                        modalBody.innerHTML = html;
-                        initializeSelect2('#formModal .form-select');
-                        initializeImageCollection();
-                        formModal.show();
-                        attachFormSubmitListener();
-                    });
-            });
-        }
-        
-        tablaBody.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('btn-editar')) {
-                const row = e.target.closest('tr');
-                const vehiculoId = row.dataset.id;
-                modalTitle.textContent = `Editar Vehículo #${vehiculoId}`;
-                const url = `{{ path('app_vehiculos_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', vehiculoId);
-                fetch(url).then(r => r.text()).then(html => {
+        // --- MANEJO DE APERTURA DE MODALES ---
+        function openMainModal(url, title) {
+             modalTitle.textContent = title;
+             fetch(url)
+                .then(r => r.text()).then(html => {
                     modalBody.innerHTML = html;
                     initializeSelect2('#formModal .form-select');
+                    initializeImageCollection();
                     formModal.show();
                     attachFormSubmitListener();
                 });
-            }
+        }
+
+        const newVehicleButton = document.getElementById('btn-nuevo-vehiculo');
+        if (newVehicleButton) {
+            newVehicleButton.addEventListener('click', () => openMainModal('{{ path('app_vehiculos_new') }}', 'Nuevo Vehículo'));
+        }
+        
+        $('#tabla-vehiculos tbody').on('click', '.btn-editar', function() {
+            const row = $(this).closest('tr');
+            const vehiculoId = row.data('id');
+            const url = `{{ path('app_vehiculos_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', vehiculoId);
+            openMainModal(url, `Editar Vehículo #${vehiculoId}`);
         });
 
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('action') === 'new') {
-            if (newVehicleButton) {
-                newVehicleButton.click();
-            }
+            newVehicleButton?.click();
         }
         
-        // --- NIVEL 2: ABRIR MODAL ANIDADO DE VERSIONES ---
         modalBody.addEventListener('click', function(e) {
             if (e.target.closest('#btn-add-nested-version')) {
                 nestedModalTitle.textContent = 'Nueva Versión';
-                fetch('{{ path('app_versiones_new') }}')
-                    .then(r => r.text()).then(html => {
-                        nestedModalBody.innerHTML = html;
-                        initializeSelect2('#nestedFormModal .form-select');
-                        nestedFormModal.show();
-                        attachNestedFormSubmitListener();
-                    });
+                fetch('{{ path('app_versiones_new') }}').then(r => r.text()).then(html => {
+                    nestedModalBody.innerHTML = html;
+                    initializeSelect2('#nestedFormModal .form-select');
+                    nestedFormModal.show();
+                    attachNestedFormSubmitListener();
+                });
+            }
+            if (e.target.closest('#btn-add-nested-proveedor')) {
+                supplierModalTitle.textContent = 'Nuevo Proveedor';
+                fetch('{{ path('app_proveedores_new') }}').then(r => r.text()).then(html => {
+                    supplierModalBody.innerHTML = html;
+                    supplierFormModal.show();
+                    attachSupplierFormSubmitListener();
+                });
             }
         });
         
-        // --- NIVEL 3: ABRIR MODAL SUPER-ANIDADO DE MODELOS ---
         nestedModalBody.addEventListener('click', function(e) {
             if (e.target.closest('#btn-add-nested-modelo')) {
                 superNestedModalTitle.textContent = 'Nuevo Modelo';
-                fetch('{{ path('app_modelos_new') }}')
-                    .then(r => r.text()).then(html => {
-                        superNestedModalBody.innerHTML = html;
-                        initializeSelect2('#superNestedFormModal .form-select');
-                        superNestedFormModal.show();
-                        attachSuperNestedFormSubmitListener();
-                    });
+                fetch('{{ path('app_modelos_new') }}').then(r => r.text()).then(html => {
+                    superNestedModalBody.innerHTML = html;
+                    initializeSelect2('#superNestedFormModal .form-select');
+                    superNestedFormModal.show();
+                    attachSuperNestedFormSubmitListener();
+                });
             }
         });
 
+        superNestedModalBody.addEventListener('click', function(e) {
+            if (e.target.closest('#btn-add-nested-marca')) {
+                ultraNestedModalTitle.textContent = 'Nueva Marca';
+                fetch('{{ path('app_marca_new') }}').then(r => r.text()).then(html => {
+                    ultraNestedModalBody.innerHTML = html;
+                    ultraNestedFormModal.show();
+                    attachUltraNestedFormSubmitListener();
+                });
+            }
+        });
+
+        // --- MANEJO DE COLECCIÓN DE IMÁGENES ---
         function initializeImageCollection() {
             const addBtn = document.getElementById('btn-add-imagen');
             const collectionHolder = document.getElementById('imagenes-collection');
             if (!addBtn || !collectionHolder) return;
-
             const addRemoveButton = (item) => {
                 const removeButton = document.createElement('button');
                 removeButton.type = 'button';
@@ -245,9 +236,7 @@
                     formGroup.appendChild(removeButton);
                 }
             };
-            
             collectionHolder.querySelectorAll('li').forEach(row => addRemoveButton(row));
-
             addBtn.addEventListener('click', function() {
                 let index = collectionHolder.dataset.index;
                 const newForm = collectionHolder.dataset.prototype.replace(/__name__/g, index);
@@ -258,18 +247,15 @@
                 collectionHolder.appendChild(newFormLi);
                 addRemoveButton(newFormLi);
             });
-
             collectionHolder.addEventListener('click', function(e) {
                 if (e.target.closest('.btn-remove-imagen')) {
                     e.target.closest('li').remove();
                 }
             });
         }
-
-
-        // --- SUBMIT DEL FORMULARIO PRINCIPAL (VEHÍCULOS) ---
-        function attachFormSubmitListener() {
-            const form = document.getElementById('formVehiculo');
+        
+        // --- LÓGICA GENÉRICA DE SUBMIT DE FORMULARIO ---
+        function handleFormSubmit(form, onSuccess, modalToHide) {
             if (!form) return;
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -284,144 +270,72 @@
                 .then(data => {
                     if (data.status === 'success') {
                         $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        if (form.action.includes('/edit')) {
-                            updateTableRow(data.vehiculo);
-                        } else {
-                            addTableRow(data.vehiculo);
+                        onSuccess(data);
+                        if (modalToHide) {
+                            modalToHide.hide();
                         }
-                        formModal.hide();
-                    }else{
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
+                    } else {
+                        if(data.errors) {
+                            Object.keys(data.errors).forEach(fieldName => {
+                                const container = form.querySelector(`[data-field-error="${fieldName}"]`);
+                                if (container) { container.innerHTML = `<p class="mb-0">${data.errors[fieldName].join(', ')}</p>`; }
+                            });
+                            $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: 'Por favor, corrija los errores.'},{type: 'danger'});
+                        } else {
+                            $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
+                        }
                     }
-
                 })
                 .catch(errorData => {
-                    if (errorData.errors) {
-                        Object.keys(errorData.errors).forEach(fieldName => {
-                            const container = form.querySelector(`[data-field-error="${fieldName}"]`);
-                            if (container) { container.innerHTML = `<p class="mb-0">${errorData.errors[fieldName].join(', ')}</p>`; }
-                        });
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: errorData.message},{type: 'danger'});
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: errorData.message || 'Ocurrió un error.'},{type: 'danger'});
-                    }
+                    $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: 'Ocurrió un error inesperado.'},{type: 'danger'});
                 })
                 .finally(() => { spinner.classList.add('d-none'); btn.disabled = false; });
             });
         }
+
+        // --- ASIGNACIÓN DE LISTENERS A CADA FORMULARIO ---
+        function attachFormSubmitListener() {
+            handleFormSubmit(document.getElementById('formVehiculo'), (data) => {
+                window.location.reload();
+            }, formModal);
+        }
         
-        // --- SUBMIT DEL FORMULARIO ANIDADO (VERSIONES) ---
         function attachNestedFormSubmitListener() {
-            const nestedForm = document.getElementById('formVersion');
-            if (!nestedForm) return;
-            nestedForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = nestedForm.querySelector('button[type="submit"]');
-                const spinner = btn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                btn.disabled = true;
-                nestedForm.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
-                
-                fetch(nestedForm.action, { method: 'POST', body: new FormData(nestedForm), headers: {'X-Requested-with': 'XMLHttpRequest'} })
-                .then(response => { if (!response.ok) { return response.json().then(err => Promise.reject(err)); } return response.json(); })
-                .then(data => {
-                    if (data.status === 'success') {
-                        const v = data.version;
-                        const newOption = new Option(v.displayText, v.id, true, true);
-                        $('#formVehiculo select[name="vehiculos[version]"]').append(newOption).trigger('change');
-                        nestedFormModal.hide();
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                    }
-                })
-                .catch(errorData => {
-                    if (errorData.errors) {
-                         Object.keys(errorData.errors).forEach(fieldName => {
-                            const container = nestedForm.querySelector(`[data-field-error="${fieldName}"]`);
-                            if (container) { container.innerHTML = `<p class="mb-0">${errorData.errors[fieldName].join(', ')}</p>`; }
-                        });
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: errorData.message},{type: 'danger'});
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: errorData.message || 'Ocurrió un error.'},{type: 'danger'});
-                    }
-                })
-                .finally(() => { spinner.classList.add('d-none'); btn.disabled = false; });
-            });
+            handleFormSubmit(document.getElementById('formVersion'), (data) => {
+                const v = data.version;
+                const newOption = new Option(v.displayText, v.id, true, true);
+                $('#formVehiculo select[name="vehiculos[version]"]').append(newOption).trigger('change');
+            }, nestedFormModal);
         }
         
-        // --- SUBMIT DEL FORMULARIO SUPER-ANIDADO (MODELOS) ---
         function attachSuperNestedFormSubmitListener() {
-            const superNestedForm = document.getElementById('formModelo');
-            if (!superNestedForm) return;
-            superNestedForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = superNestedForm.querySelector('button[type="submit"]');
-                const spinner = btn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                btn.disabled = true;
-                superNestedForm.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
-
-                fetch(superNestedForm.action, { method: 'POST', body: new FormData(superNestedForm), headers: {'X-Requested-with': 'XMLHttpRequest'} })
-                .then(response => { if (!response.ok) { return response.json().then(err => Promise.reject(err)); } return response.json(); })
-                .then(data => {
-                    if (data.status === 'success') {
-                        const newModel = data.modelo;
-                        const newOption = new Option(newModel.displayText, newModel.id, true, true);
-                        $('#nestedFormModal select[name="versiones[modelo]"]').append(newOption).trigger('change');
-                        superNestedFormModal.hide();
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                    }
-                })
-                .catch(errorData => {
-                    if (errorData.errors) {
-                         Object.keys(errorData.errors).forEach(fieldName => {
-                            const container = superNestedForm.querySelector(`[data-field-error="${fieldName}"]`);
-                            if (container) { container.innerHTML = `<p class="mb-0">${errorData.errors[fieldName].join(', ')}</p>`; }
-                        });
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: errorData.message},{type: 'danger'});
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: errorData.message || 'Ocurrió un error.'},{type: 'danger'});
-                    }
-                })
-                .finally(() => { spinner.classList.add('d-none'); btn.disabled = false; });
-            });
+            handleFormSubmit(document.getElementById('formModelo'), (data) => {
+                const newModel = data.modelo;
+                const newOption = new Option(newModel.displayText, newModel.id, true, true);
+                $('#nestedFormModal select[name="versiones[modelo]"]').append(newOption).trigger('change');
+            }, superNestedFormModal);
         }
         
-        function formatPrice(price) {
-             if (price === null || isNaN(price)) { return '$ 0,00'; }
-             return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price);
+        function attachSupplierFormSubmitListener() {
+            handleFormSubmit(document.getElementById('formProveedor'), (data) => {
+                const newSupplier = data.proveedor;
+                const newOption = new Option(newSupplier.displayText, newSupplier.id, true, true);
+                $('#formVehiculo select[name="vehiculos[supplier]"]').append(newOption).trigger('change');
+            }, supplierFormModal);
         }
 
-        function updateTableRow(v) {
-            const row = tablaBody.querySelector(`tr[data-id="${v.id}"]`);
-            if (row) {
-                row.querySelector('.vehiculo-desc').innerHTML = `<span class="fw-bold">${v.marca.name} ${v.modelo.name}</span><br><small>${v.version.name}</small>`;
-                row.querySelector('.vehiculo-ano').textContent = v.anio;
-                row.querySelector('.vehiculo-color').textContent = v.color;
-                row.querySelector('.vehiculo-precio').textContent = formatPrice(v.suggestedRetailPrice);
-            }
+        function attachUltraNestedFormSubmitListener() {
+            handleFormSubmit(document.getElementById('formMarca'), (data) => {
+                const newBrand = data.marca;
+                const newOption = new Option(newBrand.displayText, newBrand.id, true, true);
+                $('#superNestedFormModal select[name="modelos[marca]"]').append(newOption).trigger('change');
+            }, ultraNestedFormModal);
         }
-
-        function addTableRow(v) {
-            document.getElementById('fila-sin-vehiculos')?.remove();
-            const newRowHtml = `
-                <tr data-id="${v.id}">
-                    <td>${v.id}</td>
-                    <td class="vehiculo-desc"><span class="fw-bold">${v.marca.name} ${v.modelo.name}</span><br><small>${v.version.name}</small></td>
-                    <td class="vehiculo-ano">${v.anio}</td>
-                    <td class="vehiculo-color">${v.color}</td>
-                    <td class="vehiculo-precio">${formatPrice(v.suggestedRetailPrice)}</td>
-                    <td class="text-end"><button class="btn btn-warning btn-sm btn-editar">Editar</button></td>
-                </tr>`;
-            tablaBody.insertAdjacentHTML('beforeend', newRowHtml);
-        }
-    });
-
-    $(document).ready(function() {
+        
+        // --- INICIALIZACIÓN DE DATATABLES ---
         $('#tabla-vehiculos').DataTable({
             "pageLength": 10,
-            "language": {
-                "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-            },
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json", "emptyTable": "No se encontraron vehículos" },
             "order": [[ 0, "desc" ]]
         });
     });

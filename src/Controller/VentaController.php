@@ -13,6 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Repository\VentasRepository;
 use App\Entity\Cuotas;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 #[Route('/ventas')]
 #[IsGranted('ROLE_SALESPERSON')]
@@ -68,7 +70,7 @@ class VentaController extends AbstractController
             $entityManager->persist($venta);
 
             // --- LÓGICA PARA GENERAR CUOTAS ---
-            if ($venta->getPaymentMethod() === 'Financiado' && $venta->getNumberOfInstallments() > 0) {
+            if (($venta->getPaymentMethod() === 'Financiado' || $venta->getPaymentMethod() === 'Efectivo' || $venta->getPaymentMethod() === 'Transferencia Bancaria' || $venta->getPaymentMethod() === 'Otro') && $venta->getNumberOfInstallments() >= 0) {
                 $numeroDeCuotas = $venta->getNumberOfInstallments();
                 $montoCuota = $venta->getFinalSalePrice() / $numeroDeCuotas;
                 $fechaVenta = $venta->getSaleDate();
@@ -94,8 +96,13 @@ class VentaController extends AbstractController
 
             $entityManager->flush(); // Guarda la venta Y todas las cuotas a la vez
 
+            if ($venta->getPaymentMethod() !== 'Financiado') {
+                $venta->setReceiptNumber('RV-' . str_pad($venta->getId(), 6, '0', STR_PAD_LEFT));
+                $entityManager->flush();
+            }
+
             $this->addFlash('success', '¡Venta registrada con éxito!');
-            return $this->redirectToRoute('app_ventas_index');
+            return $this->redirectToRoute('app_ventas_success', ['id' => $venta->getId()]);
         }
 
         return $this->render('ventas/new.html.twig', [
@@ -110,5 +117,31 @@ class VentaController extends AbstractController
         return $this->render('ventas/show.html.twig', [
             'venta' => $venta,
         ]);
+    }
+
+    #[Route('/{id}/success', name: 'app_ventas_success')]
+    public function saleSuccess(Ventas $venta): Response
+    {
+        return $this->render('ventas/success.html.twig', [
+            'venta' => $venta
+        ]);
+    }
+
+    #[Route('/{id}/receipt', name: 'app_ventas_receipt')]
+    public function receipt(Ventas $venta): Response
+    {
+        $pdfOptions = new Options();
+        $pdfOptions->set('defaultFont', 'Arial');
+        $dompdf = new Dompdf($pdfOptions);
+
+        $html = $this->renderView('receipt/receipt_template.html.twig', ['venta' => $venta]);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $filename = 'recibo_venta_' . $venta->getReceiptNumber() . '.pdf';
+        $dompdf->stream($filename, ["Attachment" => true]); // true para forzar la descarga
+
+        return new Response('', 200, ['Content-Type' => 'application/pdf']);
     }
 }

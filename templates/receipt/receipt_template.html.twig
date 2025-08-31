@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo de Pago</title>
+    <style>
+        body { font-family: sans-serif; font-size: 12px; }
+        .container { width: 90%; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;}
+        .header h1 { margin: 0; }
+        .details { margin-top: 20px; }
+        .details table { width: 100%; border-collapse: collapse; }
+        .details th, .details td { border: 1px solid #ddd; padding: 8px; }
+        .details th { background-color: #f2f2f2; text-align: left; }
+        .total { font-weight: bold; }
+        .footer { text-align: center; margin-top: 40px; font-size: 0.8em; color: #777; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Recibo de Pago</h1>
+            <h2>Tu Concesionaria S.A.</h2>
+        </div>
+        <div class="details">
+            {% if venta is defined and venta is not null %}
+                <p><strong>Recibo N°:</strong> {{ venta.receiptNumber }}</p>
+                <p><strong>Fecha:</strong> {{ venta.saleDate|date('d/m/Y') }}</p>
+                <p><strong>Cliente:</strong> {{ venta.cliente.firstName }} {{ venta.cliente.lastName }} (DNI: {{ venta.cliente.documentNumber }})</p>
+                <hr>
+                <h4>Detalle de la Operación</h4>
+                <table>
+                    <thead><tr><th>Concepto</th><th style="text-align: right;">Monto</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td>Pago total por vehículo {{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}</td>
+                            <td style="text-align: right;" class="total">${{ venta.finalSalePrice|number_format(2, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            {% elseif cuota is defined and cuota is not null %}
+                <p><strong>Recibo N°:</strong> {{ cuota.receiptNumber }}</p>
+                <p><strong>Fecha de Pago:</strong> {{ cuota.paymentDate|date('d/m/Y H:i') }}</p>
+                <p><strong>Cliente:</strong> {{ cuota.venta.cliente.firstName }} {{ cuota.venta.cliente.lastName }} (DNI: {{ cuota.venta.cliente.documentNumber }})</p>
+                <hr>
+                <h4>Detalle del Pago</h4>
+                <table>
+                    <thead><tr><th>Concepto</th><th style="text-align: right;">Monto</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td>Pago de cuota N° {{ cuota.installmentNumber }} / {{ cuota.venta.numberOfInstallments }} del vehículo {{ cuota.venta.vehiculo.version.modelo.marca.name }}</td>
+                            <td style="text-align: right;" class="total">${{ cuota.amount|number_format(2, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+        <div class="footer">
+            <p>Gracias por su pago.</p>
+        </div>
+    </div>
+</body>
+</html>

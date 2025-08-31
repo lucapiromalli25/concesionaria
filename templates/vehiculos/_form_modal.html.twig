@@ -27,7 +27,6 @@
     <hr>
     <h5 class="mb-3">Información de Compra</h5>
 
-    {# --- CAMPO PROVEEDOR AÑADIDO --- #}
     <div class="form-group">
         {{ form_label(form.supplier) }}
         <div class="input-group">
@@ -47,7 +46,8 @@
     {{ form_row(form.internal_observations) }}
     
     <hr>
-    
+    {{ form_row(form.purchaseDocumentFile) }}
+
     <div class="form-group">
         {{ form_label(form.imagenesVehiculos) }}
         <ul class="list-unstyled" 
@@ -62,7 +62,7 @@
             {% endfor %}
         </ul>
         <button type="button" id="btn-add-imagen" class="btn btn-secondary btn-sm mt-2">
-            <i class="fa fa-plus"></i> Agregar otra imagen
+            <i class="fa fa-plus"></i> Agregar imagen
         </button>
     </div>
 

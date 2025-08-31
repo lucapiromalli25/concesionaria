@@ -68,6 +68,9 @@ class Ventas
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $saleDocumentName = null;
 
+    #[ORM\Column(length: 50, unique: true, nullable: true)]
+    private ?string $receiptNumber = null;
+
     public function __construct()
     {
         $this->cuotas = new ArrayCollection();
@@ -319,5 +322,16 @@ class Ventas
     public function getSaleDocumentName(): ?string
     {
         return $this->saleDocumentName;
+    }
+
+    public function getReceiptNumber(): ?string
+    {
+        return $this->receiptNumber;
+    }
+
+    public function setReceiptNumber(?string $receiptNumber): static
+    {
+        $this->receiptNumber = $receiptNumber;
+        return $this;
     }
 }
