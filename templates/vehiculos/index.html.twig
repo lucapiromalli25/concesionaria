@@ -9,6 +9,10 @@
             <div class="card-header">
                 <div class="d-flex align-items-center">
                     <h4 class="card-title">Listado de Vehículos</h4>
+                    <a href="{{ asset('documents/BOLETTO.pdf') }}" target="_blank" class="btn btn-info btn-round ms-auto me-2">
+                        <i class="fas fa-print"></i>
+                        Imprimir Boleto en Blanco
+                    </a>
                     {# --- BOTÓN AÑADIDO --- #}
                     <a href="{{ path('app_report_export_vehicles') }}" class="btn btn-secondary btn-round ms-auto me-2">
                         <i class="fas fa-file-excel"></i>
