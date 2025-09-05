@@ -72,6 +72,9 @@ class VentaController extends AbstractController
             // --- LÓGICA PARA GENERAR CUOTAS ---
             if (($venta->getPaymentMethod() === 'Financiado' || $venta->getPaymentMethod() === 'Efectivo' || $venta->getPaymentMethod() === 'Transferencia Bancaria' || $venta->getPaymentMethod() === 'Otro') && $venta->getNumberOfInstallments() >= 0) {
                 $numeroDeCuotas = $venta->getNumberOfInstallments();
+                if ($numeroDeCuotas === 0 || $numeroDeCuotas === null) {
+                    $numeroDeCuotas = 1; // Si es 0, se considera como 1 cuota (pago único)
+                }
                 $montoCuota = $venta->getFinalSalePrice() / $numeroDeCuotas;
                 $fechaVenta = $venta->getSaleDate();
 
