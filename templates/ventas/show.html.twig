@@ -57,39 +57,44 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for cuota in venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
-                        <tr>
-                            <td><strong>{{ cuota.installmentNumber }}</strong></td>
-                            <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
-                            <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
-                            <td>
-                                {% if cuota.status == 'Pagada' %}
-                                    <span class="badge bg-success">Pagada</span>
-                                {% elseif cuota.status == 'Atrasada' %}
-                                    <span class="badge bg-danger">Atrasada</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
-                            <td class="text-end">
-                                {% if cuota.status == 'Pendiente' %}
-                                    <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
-                                        Registrar Pago
-                                    </button>
-                                {% endif %}
-                                {% if cuota.receiptName %}
-                                    <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-info btn-sm">
-                                        Ver Comprobante
-                                    </a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center">Esta venta no tiene un plan de cuotas asociado.</td>
-                        </tr>
-                    {% endfor %}
+                        {% for cuota in venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
+                            <tr>
+                                <td><strong>{{ cuota.installmentNumber }}</strong></td>
+                                <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
+                                <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
+                                <td>
+                                    {% if cuota.status == 'Pagada' %}
+                                        <span class="badge bg-success">Pagada</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
+                                <td class="text-end">
+                                    {% if cuota.status == 'Pendiente' %}
+                                        <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
+                                            Registrar Pago
+                                        </button>
+                                    {% endif %}
+
+                                    {% if cuota.receiptName %}
+                                        <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido">
+                                            <i class="fas fa-paperclip"></i> Comprobante
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if cuota.receiptNumber %}
+                                        <a href="{{ path('app_cuotas_receipt', {'id': cuota.id}) }}" target="_blank" class="btn btn-info btn-sm" title="Ver Recibo PDF">
+                                            <i class="fas fa-receipt"></i> Recibo
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">Esta venta no tiene un plan de cuotas asociado.</td>
+                            </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -128,12 +133,11 @@
                 paymentModalTitle.textContent = `Registrar Pago de Cuota #${cuotaId}`;
                 const url = `{{ path('app_cuotas_register_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
                 
-                fetch(url)
-                    .then(r => r.text()).then(html => {
-                        paymentModalBody.innerHTML = html;
-                        paymentModal.show();
-                        attachPaymentFormSubmitListener();
-                    });
+                fetch(url).then(r => r.text()).then(html => {
+                    paymentModalBody.innerHTML = html;
+                    paymentModal.show();
+                    attachPaymentFormSubmitListener();
+                });
             }
         });
 
@@ -153,19 +157,27 @@
                         paymentModal.hide();
                         $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
                         
+                        // Descarga automática del RECIBO PDF
+                        window.open(data.cuota.reciboUrl, '_blank');
+                        
                         // Actualizar la fila en la tabla dinámicamente
                         const row = tablaBody.querySelector(`button[data-cuota-id="${data.cuota.id}"]`).closest('tr');
                         if(row) {
-                            // Actualizar estado
                             row.children[3].innerHTML = `<span class="badge bg-success">${data.cuota.status}</span>`;
-                            // Actualizar fecha de pago
                             row.children[4].textContent = data.cuota.paymentDate;
-                            // Reemplazar botón de pago por el de ver comprobante
-                            let actionsCell = row.children[5];
-                            actionsCell.innerHTML = `<a href="${data.cuota.receiptUrl}" target="_blank" class="btn btn-info btn-sm">Ver Comprobante</a>`;
+
+                            // Generamos los nuevos botones
+                            let actionsHtml = '';
+                            if (data.cuota.comprobanteUrl) {
+                                actionsHtml += `<a href="${data.cuota.comprobanteUrl}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido"><i class="fas fa-paperclip"></i> Comprobante</a> `;
+                            }
+                            if (data.cuota.reciboUrl) {
+                                actionsHtml += `<a href="${data.cuota.reciboUrl}" target="_blank" class="btn btn-info btn-sm" title="Ver Recibo PDF"><i class="fas fa-receipt"></i> Recibo</a>`;
+                            }
+                            row.children[5].innerHTML = actionsHtml;
                         }
                     } else {
-                        // ... manejo de errores ...
+                        // ... manejo de errores
                     }
                 })
                 .finally(() => {

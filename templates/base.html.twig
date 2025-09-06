@@ -12,27 +12,27 @@
 		<script src="{{ asset('assets/js/plugin/webfont/webfont.min.js') }}"></script>
 		<script>
 			WebFont.load({
-				google: {
-					"families": ["Public Sans:300,400,500,600,700"]
-				},
-				custom: {
-					"families": [
-						"Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"
-					],
-					urls: ['{{ asset('assets/css/fonts.min.css') }}']
-				},
-				active: function () {
-					sessionStorage.fonts = true;
-				}
-			});
+google: {
+"families": ["Public Sans:300,400,500,600,700"]
+},
+custom: {
+"families": [
+"Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"
+],
+urls: ['{{ asset('assets/css/fonts.min.css') }}']
+},
+active: function () {
+sessionStorage.fonts = true;
+}
+});
 		</script>
 
 		{% block stylesheets %}
 			<link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
 			<link rel="stylesheet" href="{{ asset('assets/css/plugins.min.css') }}">
 			<link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.min.css') }}">
-			<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-			<style> 
+			<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+			<style>
 				.modal-underlay {
 					opacity: 0.4;
 					filter: blur(2px);
@@ -49,7 +49,7 @@
 						<a
 							href="#" class="logo">
 							{# Cambia 'app_home' a tu ruta principal #}
-							<img src="{{ asset('assets/img/kaiadmin/logo_light.svg') }}" alt="navbar brand" class="navbar-brand" height="20">
+							<img src="{{ asset('assets/img/kaiadmin/atilio_automotores.png') }}" alt="navbar brand" class="navbar-brand" height="150">
 						</a>
 						<div class="nav-toggle">
 							<button class="btn btn-toggle toggle-sidebar">
@@ -114,6 +114,11 @@
 													<span class="sub-item">Proveedores</span>
 												</a>
 											</li>
+											<li>
+												<a href="{{ path('app_user_index') }}">
+													<span class="sub-item">Usuarios</span>
+												</a>
+											</li>
 											<li class="nav-item">
 												<a href="{{ path('app_vehiculos_index') }}">
 													<i class="fas fa-car"></i>
@@ -146,13 +151,6 @@
 
 							{# EJEMPLO DE LINK SIMPLE PARA USUARIO LOGUEADO #}
 							{#{% if is_granted('ROLE_USER') %}#}
-								<li class="nav-item"> <a
-									href="#">
-									{# Reemplazar con path('app_productos_index') #}
-									<i class="fas fa-box"></i>
-									<p>Mis Productos</p>
-								</a>
-							</li>
 							{#{% endif %}#}
 						</ul>
 					</div>
@@ -165,7 +163,7 @@
 							<a
 								href="{{path('app_root')}}" class="logo">
 								{# Cambia 'app_home' a tu ruta principal #}
-								<img src="{{ asset('assets/img/kaiadmin/logo_light.svg') }}" alt="navbar brand" class="navbar-brand" height="20">
+								<img src="{{ asset('assets/img/kaiadmin/atilio_automotores.png') }}" alt="navbar brand" class="navbar-brand" height="20">
 							</a>
 							<div class="nav-toggle">
 								<button class="btn btn-toggle toggle-sidebar">
@@ -272,7 +270,7 @@
 			<script src="{{ asset('assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
 
 			<script src="{{ asset('assets/js/plugin/sweetalert/sweetalert.min.js') }}"></script>
-			
+
 			<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 			<script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>

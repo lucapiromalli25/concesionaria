@@ -1,0 +1,27 @@
+{% set form_action = form.vars.value and form.vars.value.id ? path('app_user_edit', {'id': form.vars.value.id}) : path('app_user_new') %}
+
+{{ form_start(form, {'action': form_action, 'attr': {'id': 'formUser'}}) }}
+    {{ form_row(form.complete_name) }}
+    {{ form_row(form.email) }}
+    
+    <div class="form-group">
+        {{ form_label(form.plainPassword) }}
+        {{ form_widget(form.plainPassword) }}
+        <div class="text-danger form-error-message mt-1" data-field-error="plainPassword"></div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Roles</label>
+        <div class="selectgroup selectgroup-pills">
+            {{ form_widget(form.roles) }}
+        </div>
+        <div class="text-danger form-error-message mt-1" data-field-error="roles"></div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> Guardar
+        </button>
+    </div>
+{{ form_end(form) }}

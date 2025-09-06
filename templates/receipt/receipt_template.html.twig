@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo de Pago</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-size: 13px; 
+            margin: 0; 
+            padding: 0; 
+            background: #f9f9f9;
+            color: #333;
+        }
+        .container { 
+            width: 90%; 
+            margin: 20px auto; 
+            background: #fff; 
+            padding: 30px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px;
+        }
+        .header img { 
+            height: 80px; 
+        }
+        .header .title { 
+            text-align: right; 
+        }
+        .header .title h1 { 
+            margin: 0; 
+            font-size: 22px; 
+            color: #222; 
+        }
+        .header .title h2 { 
+            margin: 0; 
+            font-size: 16px; 
+            color: #666; 
+            font-weight: normal;
+        }
+        .details p { 
+            margin: 4px 0; 
+        }
+        .details h4 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            font-size: 15px;
+            color: #444;
+        }
+        .details table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px;
+        }
+        .details th, .details td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            font-size: 13px;
+        }
+        .details th { 
+            background-color: #f5f5f5; 
+            text-align: left; 
+            color: #444; 
+        }
+        .total { 
+            font-weight: bold; 
+            font-size: 14px; 
+            color: #000;
+        }
+        .footer { 
+            text-align: center; 
+            margin-top: 40px; 
+            font-size: 11px; 
+            color: #777; 
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <img src="{{ absolute_url(asset('assets/img/kaiadmin/atilio_automotores.png')) }}" alt="Atilio Automotores" style="height: 80px;">
+            </div>
+            <div class="title">
+                <h1>Recibo de Pago</h1>
+                <h2>Atilio Automotores</h2>
+            </div>
+        </div>
+
+        <div class="details">
+            {% if venta is defined and venta is not null %}
+                <p><strong>Recibo N°:</strong> {{ venta.receiptNumber }}</p>
+                <p><strong>Fecha:</strong> {{ venta.saleDate|date('d/m/Y') }}</p>
+                <p><strong>Cliente:</strong> {{ venta.cliente.firstName }} {{ venta.cliente.lastName }} (DNI: {{ venta.cliente.documentNumber }})</p>
+
+                <h4>Detalle de la Operación</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th style="text-align: right;">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Pago total por vehículo {{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}</td>
+                            <td style="text-align: right;" class="total">
+                                ${{ venta.finalSalePrice|number_format(2, ',', '.') }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            {% elseif cuota is defined and cuota is not null %}
+                <p><strong>Recibo N°:</strong> {{ cuota.receiptNumber }}</p>
+                <p><strong>Fecha de Pago:</strong> {{ cuota.paymentDate|date('d/m/Y H:i') }}</p>
+                <p><strong>Cliente:</strong> {{ cuota.venta.cliente.firstName }} {{ cuota.venta.cliente.lastName }} (DNI: {{ cuota.venta.cliente.documentNumber }})</p>
+
+                <h4>Detalle del Pago</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th style="text-align: right;">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Pago de cuota N° {{ cuota.installmentNumber }} / {{ cuota.venta.numberOfInstallments }} del vehículo {{ cuota.venta.vehiculo.version.modelo.marca.name }}</td>
+                            <td style="text-align: right;" class="total">
+                                ${{ cuota.amount|number_format(2, ',', '.') }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            <p>Gracias por confiar en <strong>Atilio Automotores</strong>.  
+            Dirección: Gral. Pedro Díaz 1180, B1686 Villa Tesei, Provincia de Buenos Aires | Tel: (011) 4452-6094</p>
+        </div>
+    </div>
+</body>
+</html>

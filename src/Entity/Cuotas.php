@@ -45,6 +45,9 @@ class Cuotas
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 50, unique: true, nullable: true)]
+    private ?string $receiptNumber = null;
+
     public function getId(): ?int { return $this->id; }
     public function getVenta(): ?Ventas { return $this->venta; }
     public function setVenta(?Ventas $venta): static { $this->venta = $venta; return $this; }
@@ -71,4 +74,15 @@ class Cuotas
     public function getReceiptName(): ?string { return $this->receiptName; }
     public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static { $this->updatedAt = $updatedAt; return $this; }
+
+    public function getReceiptNumber(): ?string
+    {
+        return $this->receiptNumber;
+    }
+
+    public function setReceiptNumber(?string $receiptNumber): static
+    {
+        $this->receiptNumber = $receiptNumber;
+        return $this;
+    }
 }

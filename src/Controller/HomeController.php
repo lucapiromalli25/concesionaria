@@ -19,6 +19,7 @@ class HomeController extends AbstractController
     {
         // --- KPIs Principales ---
         $totalVehiculos = $vehiculosRepo->countInStock();
+        $totalVehiculosVendidos = $vehiculosRepo->countVendidos();
         $ventasMesActual = $ventasRepo->countSalesThisMonth();
         $valorTotalInventario = $vehiculosRepo->sumInventoryValue();
         $totalVendidoHistorico = $ventasRepo->getTotalSalesValue();
@@ -133,6 +134,7 @@ class HomeController extends AbstractController
         // --- Renderizar la plantilla con todas las variables ---
         return $this->render('home/index.html.twig', [
             'totalVehiculos' => $totalVehiculos,
+            'totalVehiculosVendidos' => $totalVehiculosVendidos,
             'ventasMesActual' => $ventasMesActual,
             'valorTotalInventario' => $valorTotalInventario,
             'totalVendidoHistorico' => $totalVendidoHistorico,
