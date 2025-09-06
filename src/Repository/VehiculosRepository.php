@@ -32,6 +32,19 @@ class VehiculosRepository extends ServiceEntityRepository
     }
 
     /**
+     * Cuenta los vehículos que están "Vendidos".
+     */
+    public function countVendidos(): int
+    {
+        return $this->createQueryBuilder('v')
+            ->select('count(v.id)')
+            ->where('v.state = :state')
+            ->setParameter('state', 'Vendido')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Suma el valor de venta de todos los vehículos "En Stock".
      */
     public function sumInventoryValue(): float

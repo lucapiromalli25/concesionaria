@@ -14,12 +14,74 @@
     </div>
 
     <div class="row">
-        <div class="col-sm-6">{{ form_row(form.anio) }}</div>
-        <div class="col-sm-6">{{ form_row(form.plateNumber) }}</div>
-        <div class="col-sm-6">{{ form_row(form.color) }}</div>
-        <div class="col-sm-6">{{ form_row(form.chassis_number) }}</div>
-        <div class="col-sm-6">{{ form_row(form.engine_number) }}</div>
-        <div class="col-sm-6">{{ form_row(form.kilometers) }}</div>
+        <div class="col-sm-6">
+            {{ form_row(form.anio, {
+                'attr': {
+                    'required': 'required',
+                    'pattern': '^[0-9]{4}$',
+                    'min': '1900',
+                    'title': 'Ingrese un año válido de 4 dígitos (ej: 2025)'
+                }
+            }) }}
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.plateNumber, {
+                'attr': {
+                    'required': 'required',
+                    'pattern': '^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$',
+                    'title': 'Formato válido: ABC123 o AB123CD'
+                }
+            }) }}
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.color, {
+                'attr': {
+                    'required': 'required',
+                    'title': 'Seleccione un color de la lista',
+                    'list': 'lista-colores'
+                }
+            }) }}
+            <datalist id="lista-colores">
+                <option value="Blanco">
+                <option value="Negro">
+                <option value="Rojo">
+                <option value="Azul">
+                <option value="Verde">
+                <option value="Gris">
+                <option value="Plateado">
+                <option value="Amarillo">
+                <option value="Naranja">
+                <option value="Marrón">
+                <option value="Bordó">
+                <option value="Violeta">
+            </datalist>
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.chassis_number, {
+                'attr': {
+                    'required': 'required',
+                    'pattern': '^[A-Za-z0-9]+$',
+                    'title': 'Solo caracteres alfanuméricos'
+                }
+            }) }}
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.engine_number, {
+                'attr': {
+                    'required': 'required',
+                    'pattern': '^[0-9]+$',
+                    'title': 'Solo números'
+                }
+            }) }}
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.kilometers, {
+                'attr': {
+                    'pattern': '^[0-9]+$',
+                    'title': 'Ingrese solo números enteros'
+                }
+            }) }}
+        </div>
         <div class="col-sm-6">{{ form_row(form.state) }}</div>
         <div class="col-sm-6">{{ form_row(form.entry_date) }}</div>
     </div>
@@ -39,8 +101,23 @@
     </div>
     
     <div class="row">
-        <div class="col-sm-6">{{ form_row(form.purchase_price) }}</div>
-        <div class="col-sm-6">{{ form_row(form.suggested_retail_price) }}</div>
+        <div class="col-sm-6">
+            {{ form_row(form.purchase_price, {
+                'attr': {
+                    'pattern': '^[0-9]+(\\.[0-9]+)?$',
+                    'title': 'Ingrese un número positivo (entero o decimal)'
+                }
+            }) }}
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.suggested_retail_price, {
+                'attr': {
+                    'required': 'required',
+                    'pattern': '^[0-9]+(\\.[0-9]+)?$',
+                    'title': 'Ingrese un número positivo (entero o decimal)'
+                }
+            }) }}
+        </div>
     </div>
     
     {{ form_row(form.internal_observations) }}
