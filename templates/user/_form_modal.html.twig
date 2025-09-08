@@ -1,13 +1,28 @@
 {% set form_action = form.vars.value and form.vars.value.id ? path('app_user_edit', {'id': form.vars.value.id}) : path('app_user_new') %}
 
 {{ form_start(form, {'action': form_action, 'attr': {'id': 'formUser'}}) }}
-    {{ form_row(form.complete_name) }}
-    {{ form_row(form.email) }}
-    {{ form_row(form.dni) }}
-    
+
+    <div class="form-group">
+        {{ form_label(form.complete_name) }}
+        {{ form_widget(form.complete_name, {'attr': {'class': 'form-control'}}) }}
+        <div class="text-danger form-error-message mt-1" data-field-error="complete_name"></div>
+    </div>
+
+    <div class="form-group">
+        {{ form_label(form.email) }}
+        {{ form_widget(form.email, {'attr': {'class': 'form-control'}}) }}
+        <div class="text-danger form-error-message mt-1" data-field-error="email"></div>
+    </div>
+
+    <div class="form-group">
+        {{ form_label(form.dni) }}
+        {{ form_widget(form.dni, {'attr': {'class': 'form-control'}}) }}
+        <div class="text-danger form-error-message mt-1" data-field-error="dni"></div>
+    </div>
+
     <div class="form-group">
         {{ form_label(form.plainPassword) }}
-        {{ form_widget(form.plainPassword) }}
+        {{ form_widget(form.plainPassword, {'attr': {'class': 'form-control'}}) }}
         <div class="text-danger form-error-message mt-1" data-field-error="plainPassword"></div>
     </div>
 
@@ -18,6 +33,9 @@
         </div>
         <div class="text-danger form-error-message mt-1" data-field-error="roles"></div>
     </div>
+
+    {# errores globales, ej. UniqueEntity email #}
+    <div class="alert alert-danger d-none" id="form-global-error"></div>
 
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

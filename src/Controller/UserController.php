@@ -28,13 +28,14 @@ class UserController extends AbstractController
     }
 
     #[Route('/new', name: 'app_user_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher): Response
-    {
-        $user = new User();
-        $form = $this->createForm(UserType::class, $user);
-        $form->handleRequest($request);
+public function new(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher): Response|JsonResponse
+{
+    $user = new User();
+    $form = $this->createForm(UserType::class, $user);
+    $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    if ($form->isSubmitted()) {
+        if ($form->isValid()) {
             // Hashear la contraseña si se proporcionó una
             $plainPassword = $form->get('plainPassword')->getData();
             if ($plainPassword) {
@@ -49,15 +50,32 @@ class UserController extends AbstractController
             if ($request->isXmlHttpRequest()) {
                 return $this->getSuccessJsonResponse($user, 'Usuario creado correctamente.');
             }
+
             return $this->redirectToRoute('app_user_index');
         }
-        
-        if ($form->isSubmitted() && !$form->isValid() && $request->isXmlHttpRequest()) {
-            return new JsonResponse(['status' => 'error', 'errors' => $this->getFormErrors($form)], Response::HTTP_BAD_REQUEST);
-        }
 
-        return $this->render('user/_form_modal.html.twig', ['form' => $form->createView()]);
+        // ❌ formulario inválido
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse([
+                'status' => 'error',
+                'errors' => $this->getFormErrors($form),
+            ], Response::HTTP_BAD_REQUEST);
+        }
     }
+
+    // 🟢 solo renderizar HTML si es request normal (no AJAX)
+    if ($request->isXmlHttpRequest()) {
+        return new JsonResponse([
+            'status' => 'error',
+            'errors' => ['global' => ['El formulario no se procesó correctamente.']]
+        ], Response::HTTP_BAD_REQUEST);
+    }
+
+    return $this->render('user/_form_modal.html.twig', [
+        'form' => $form->createView(),
+    ]);
+}
+
 
     #[Route('/{id}/edit', name: 'app_user_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, User $user, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher): Response
@@ -105,8 +123,16 @@ class UserController extends AbstractController
     private function getFormErrors(FormInterface $form): array
     {
         $errors = [];
-        foreach ($form->getErrors(true) as $error) { $errors[$error->getOrigin()->getName()][] = $error->getMessage(); }
-        foreach ($form as $child) { if (!$child->isValid()) { foreach ($child->getErrors(true) as $error) { $errors[$child->getName()][] = $error->getMessage(); } } }
+
+        // Recorrer todos los errores del formulario, incluyendo los hijos
+        foreach ($form->getErrors(true) as $error) {
+            // $error ahora es siempre un FormError
+            $origin = $error->getOrigin();
+            $name = $origin instanceof FormInterface ? $origin->getName() : 'global';
+            $errors[$name][] = $error->getMessage();
+        }
+
         return $errors;
     }
+
 }

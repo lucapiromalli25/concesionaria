@@ -66,77 +66,110 @@
 {% endblock %}
 
 {% block javascripts %}
-    {{ parent() }}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const formModal = new bootstrap.Modal(document.getElementById('formModal'));
-        const modalBody = document.getElementById('modal-body-content');
-        const modalTitle = document.getElementById('formModalLabel');
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formModal = new bootstrap.Modal(document.getElementById('formModal'));
+    const modalBody = document.getElementById('modal-body-content');
+    const modalTitle = document.getElementById('formModalLabel');
 
-        $('#tabla-usuarios').DataTable({
-            "pageLength": 10,
-            "language": { "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json", "emptyTable": "No se encontraron usuarios" },
-            "order": [[ 0, "desc" ]]
-        });
-
-        const newButton = document.getElementById('btn-nuevo-usuario');
-        if (newButton) {
-            newButton.addEventListener('click', function() {
-                modalTitle.textContent = 'Nuevo Usuario';
-                fetch('{{ path('app_user_new') }}')
-                    .then(r => r.text()).then(html => {
-                        modalBody.innerHTML = html;
-                        formModal.show();
-                        attachFormSubmitListener();
-                    });
-            });
-        }
-
-        $('#tabla-usuarios tbody').on('click', '.btn-editar', function() {
-            const row = $(this).closest('tr');
-            const userId = row.data('id');
-            modalTitle.textContent = `Editar Usuario #${userId}`;
-            const url = `{{ path('app_user_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', userId);
-            fetch(url).then(r => r.text()).then(html => {
-                modalBody.innerHTML = html;
-                formModal.show();
-                attachFormSubmitListener();
-            });
-        });
-
-        function attachFormSubmitListener() {
-            const form = document.getElementById('formUser');
-            if (!form) return;
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = form.querySelector('button[type="submit"]');
-                const spinner = btn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                btn.disabled = true;
-                form.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
-
-                fetch(form.action, { method: 'POST', body: new FormData(form), headers: {'X-Requested-With': 'XMLHttpRequest'} })
-                .then(response => { if (!response.ok) { return response.json().then(err => Promise.reject(err)); } return response.json(); })
-                .then(data => {
-                    if (data.status === 'success') {
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        window.location.reload();
-                    }
-                })
-                .catch(errorData => {
-                    if (errorData.errors) {
-                        Object.keys(errorData.errors).forEach(fieldName => {
-                            const container = form.querySelector(`[data-field-error="${fieldName}"]`);
-                            if (container) { container.innerHTML = `<p class="mb-0">${errorData.errors[fieldName].join(', ')}</p>`; }
-                        });
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: 'Por favor, corrija los errores.'},{type: 'danger'});
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: errorData.message || 'Ocurrió un error.'},{type: 'danger'});
-                    }
-                })
-                .finally(() => { spinner.classList.add('d-none'); btn.disabled = false; });
-            });
-        }
+    $('#tabla-usuarios').DataTable({
+        "pageLength": 10,
+        "language": { "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json", "emptyTable": "No se encontraron usuarios" },
+        "order": [[ 0, "desc" ]]
     });
-    </script>
+
+    const newButton = document.getElementById('btn-nuevo-usuario');
+    if (newButton) {
+        newButton.addEventListener('click', function() {
+            modalTitle.textContent = 'Nuevo Usuario';
+            fetch('{{ path('app_user_new') }}')
+                .then(r => r.text()).then(html => {
+                    modalBody.innerHTML = html;
+                    formModal.show();
+                    attachFormSubmitListener();
+                });
+        });
+    }
+
+    $('#tabla-usuarios tbody').on('click', '.btn-editar', function() {
+        const row = $(this).closest('tr');
+        const userId = row.data('id');
+        modalTitle.textContent = `Editar Usuario #${userId}`;
+        const url = `{{ path('app_user_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', userId);
+        fetch(url).then(r => r.text()).then(html => {
+            modalBody.innerHTML = html;
+            formModal.show();
+            attachFormSubmitListener();
+        });
+    });
+
+    function attachFormSubmitListener() {
+        const form = document.getElementById('formUser');
+        if (!form) return;
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = form.querySelector('button[type="submit"]');
+            const spinner = btn.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+            btn.disabled = true;
+            form.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
+
+            fetch(form.action, { 
+                method: 'POST', 
+                body: new FormData(form), 
+                headers: {'X-Requested-With': 'XMLHttpRequest'} 
+            })
+            .then(async response => {
+                let data;
+                try {
+                    data = await response.clone().json(); // clone para poder leer de nuevo si falla
+                } catch (e) {
+                    const html = await response.text();
+                    modalBody.innerHTML = html;
+                    attachFormSubmitListener();
+                    throw { errors: null, message: "Formulario con errores" };
+                }
+                if (!response.ok) {
+                    throw data;
+                }
+                return data;
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    $.notify(
+                        {icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},
+                        {type: 'success'}
+                    );
+                    window.location.reload();
+                }
+            })
+            .catch(errorData => {
+                if (errorData.errors) {
+                    Object.keys(errorData.errors).forEach(fieldName => {
+                        const container = form.querySelector(`[data-field-error="${fieldName}"]`);
+                        if (container) { 
+                            container.innerHTML = `<p class="mb-0">${errorData.errors[fieldName].join(', ')}</p>`; 
+                        }
+                    });
+                    $.notify(
+                        {icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: 'Por favor, corrija los errores.'},
+                        {type: 'danger'}
+                    );
+                } else {
+                    $.notify(
+                        {icon: 'fas fa-exclamation-triangle', title: 'Error', message: errorData.message || 'Ocurrió un error.'},
+                        {type: 'danger'}
+                    );
+                }
+            })
+            .finally(() => { 
+                spinner.classList.add('d-none'); 
+                btn.disabled = false; 
+            });
+        });
+    }
+});
+</script>
 {% endblock %}
+
