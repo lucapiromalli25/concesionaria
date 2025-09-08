@@ -92,6 +92,22 @@ sessionStorage.fonts = true;
 										<p>Configuración</p>
 										<span class="caret"></span>
 									</a>
+									<a href="{{ path('app_vehiculos_index') }}">
+										<i class="fas fa-car"></i>
+										<p>Vehículos</p>
+									</a>
+									<a href="{{ path('app_clientes_index') }}">
+										<i class="fas fa-users"></i>
+										<p>Clientes</p>
+									</a>
+									<a href="{{ path('app_ventas_index') }}">
+										<i class="fas fa-file-invoice-dollar"></i>
+										<p>Ventas</p>
+									</a>
+									<a href="{{ path('app_reservas_index') }}">
+										<i class="fas fa-calendar-alt"></i>
+										<p>Reservas</p>
+									</a>
 									<div class="collapse" id="configuracion">
 										<ul class="nav nav-collapse">
 											<li>
@@ -117,30 +133,6 @@ sessionStorage.fonts = true;
 											<li>
 												<a href="{{ path('app_user_index') }}">
 													<span class="sub-item">Usuarios</span>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a href="{{ path('app_vehiculos_index') }}">
-													<i class="fas fa-car"></i>
-													<p>Vehículos</p>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a href="{{ path('app_clientes_index') }}">
-													<i class="fas fa-users"></i>
-													<p>Clientes</p>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a href="{{ path('app_ventas_index') }}">
-													<i class="fas fa-file-invoice-dollar"></i>
-													<p>Ventas</p>
-												</a>
-											</li>
-											<li class="nav-item">
-												<a href="{{ path('app_reservas_index') }}">
-													<i class="fas fa-calendar-alt"></i>
-													<p>Reservas</p>
 												</a>
 											</li>
 											{# Aquí irán los futuros links como Versiones, etc. #}
@@ -186,9 +178,6 @@ sessionStorage.fonts = true;
 								{% if app.user %}
 									<li class="nav-item topbar-user dropdown hidden-caret">
 										<a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
-											<div class="avatar-sm">
-												<img src="{{ asset('assets/img/profile.jpg') }}" alt="..." class="avatar-img rounded-circle">
-											</div>
 											<span class="profile-username">
 												<span class="op-7">Hola,</span>
 												<span class="fw-bold">{{ app.user.completeName }}</span>
@@ -236,17 +225,10 @@ sessionStorage.fonts = true;
 				<footer class="footer">
 					<div class="container-fluid">
 						<nav class="pull-left">
-							<ul class="nav">
-								<li class="nav-item">
-									<a class="nav-link" href="#">Ayuda</a>
-								</li>
-							</ul>
 						</nav>
 						<div class="copyright ms-auto">
-							2024, made with
-							<i class="fa fa-heart heart text-danger"></i>
-							by
-							<a href="#">Tu Nombre</a>
+						<i class="far fa-copyright"></i>
+							Copyright - Atilio Automotores
 						</div>
 					</div>
 				</footer>

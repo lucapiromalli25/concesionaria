@@ -24,6 +24,9 @@ class UserType extends AbstractType
             ->add('email', EmailType::class, [
                 'label' => 'Email'
             ])
+            ->add('dni', TextType::class, [
+                'label' => 'DNI'
+            ])
             ->add('roles', ChoiceType::class, [
                 'label' => 'Roles',
                 'choices' => [

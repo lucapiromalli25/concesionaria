@@ -36,6 +36,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $complete_name = null;
 
+    #[ORM\Column(length: 20, unique: true)]
+    private ?string $dni = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -60,7 +63,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        return (string) $this->dni;
     }
 
     /**
@@ -125,6 +128,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setCompleteName(string $complete_name): static
     {
         $this->complete_name = $complete_name;
+        return $this;
+    }
+
+    public function getDni(): ?string
+    {
+        return $this->dni;
+    }
+
+    public function setDni(string $dni): static
+    {
+        $this->dni = $dni;
         return $this;
     }
 }
