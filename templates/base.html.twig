@@ -87,11 +87,6 @@ sessionStorage.fonts = true;
 							{# EJEMPLO DE LINK CON SUBMENÚ Y PROTEGIDO POR ROL #}
 							{% if is_granted('ROLE_SALESPERSON') %}
 								<li class="nav-item">
-									<a data-bs-toggle="collapse" href="#configuracion">
-										<i class="fas fa-cogs"></i>
-										<p>Configuración</p>
-										<span class="caret"></span>
-									</a>
 									<a href="{{ path('app_vehiculos_index') }}">
 										<i class="fas fa-car"></i>
 										<p>Vehículos</p>
@@ -107,6 +102,11 @@ sessionStorage.fonts = true;
 									<a href="{{ path('app_reservas_index') }}">
 										<i class="fas fa-calendar-alt"></i>
 										<p>Reservas</p>
+									</a>
+									<a data-bs-toggle="collapse" href="#configuracion">
+										<i class="fas fa-cogs"></i>
+										<p>Configuración</p>
+										<span class="caret"></span>
 									</a>
 									<div class="collapse" id="configuracion">
 										<ul class="nav nav-collapse">
@@ -130,11 +130,14 @@ sessionStorage.fonts = true;
 													<span class="sub-item">Proveedores</span>
 												</a>
 											</li>
-											<li>
-												<a href="{{ path('app_user_index') }}">
-													<span class="sub-item">Usuarios</span>
-												</a>
-											</li>
+											{% if is_granted('ROLE_ADMIN') %}
+												<li>
+													<a href="{{ path('app_user_index') }}">
+														<span class="sub-item">Usuarios</span>
+													</a>
+												</li>
+											{% endif %}
+											
 											{# Aquí irán los futuros links como Versiones, etc. #}
 										</ul>
 									</div>
