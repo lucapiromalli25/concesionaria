@@ -130,7 +130,7 @@ sessionStorage.fonts = true;
 													<span class="sub-item">Proveedores</span>
 												</a>
 											</li>
-											{% if is_granted('ROLE_ADMIN') %}
+											{% if is_granted('ROLE_CREATE_USER') %}
 												<li>
 													<a href="{{ path('app_user_index') }}">
 														<span class="sub-item">Usuarios</span>
