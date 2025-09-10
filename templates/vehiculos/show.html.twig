@@ -69,7 +69,14 @@
             <div class="card-body">
                 <ul class="list-group list-group-flush">
                     {% if is_granted("ROLE_PRICE") %}
-                        <li class="list-group-item d-flex justify-content-between"><strong>Precio Venta:</strong> <span class="fw-bold fs-5 text-success">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><strong>Precio Venta</strong> (sugerido):</span>
+                            <span class="fw-bold fs-5 text-success">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><strong>Precio Compra</strong>:</span>
+                            <span class="fw-bold fs-5 text-primary">${{ vehiculo.purchasePrice|number_format(2, ',', '.') }}</span>
+                        </li>
                     {% endif %}
                     <li class="list-group-item d-flex justify-content-between"><strong>Estado:</strong> <span class="badge bg-primary">{{ vehiculo.state }}</span></li>
                     <li class="list-group-item d-flex justify-content-between"><strong>Patente:</strong> <span>{{ vehiculo.plateNumber|default('N/A') }}</span></li>
@@ -104,6 +111,21 @@
                         {% endif %}
                         <li class="list-group-item d-flex justify-content-between"><strong>Total Pagado:</strong> <span>${{ vehiculo.venta.getTotalPaid()|number_format(2, ',', '.') }}</span></li>
                         <li class="list-group-item d-flex justify-content-between"><strong>Saldo Pendiente:</strong> <span>${{ vehiculo.venta.getPendingBalance()|number_format(2, ',', '.') }}</span></li>
+                    </ul>
+                {% endif %}
+
+                {% if vehiculo.supplier %}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <h5 class="card-title mb-0">Proveedor</h5>
+                        <span class="badge bg-info">Registrado</span>
+                    </div>
+                    <ul class="list-group list-group-flush mt-2">
+                        <li class="list-group-item d-flex justify-content-between"><strong>Nombre:</strong> <span>{{ vehiculo.supplier.name|default('N/A') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Contacto:</strong> <span>{{ vehiculo.supplier.contactPerson|default('N/A') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Teléfono:</strong> <span>{{ vehiculo.supplier.phone|default('N/A') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Email:</strong> <span>{{ vehiculo.supplier.email|default('N/A') }}</span></li>
+                        <li class="list-group-item d-flex justify-content-between"><strong>Dirección:</strong> <span>{{ vehiculo.supplier.address|default('N/A') }}</span></li>
                     </ul>
                 {% endif %}
             </div>
