@@ -102,7 +102,7 @@ class VehiculosType extends AbstractType
                 'download_uri' => false,
             ]);
 
-            if ($this->security->isGranted('ROLE_PRECIO')) {
+            if ($this->security->isGranted('ROLE_PRICE')) {
                 $builder
                 ->add('purchase_price', MoneyType::class, [
                     'label' => 'Precio de Compra',
