@@ -1,152 +1,94 @@
 {% set form_action = form.vars.value.id ? path('app_vehiculos_edit', {'id': form.vars.value.id}) : path('app_vehiculos_new') %}
 
 {{ form_start(form, {'action': form_action, 'attr': {'id': 'formVehiculo', 'enctype': 'multipart/form-data'}}) }}
-    
-    <div class="form-group">
-        {{ form_label(form.version) }}
-        <div class="input-group">
-            {{ form_widget(form.version, {'attr': {'class': 'form-select form-select-lg'}}) }}
-            <button class="btn btn-primary" type="button" id="btn-add-nested-version">
-                <i class="fa fa-plus"></i>
-            </button>
-        </div>
-        <div class="text-danger form-error-message mt-1" data-field-error="version"></div>
-    </div>
 
-    <div class="row">
-        <div class="col-sm-6">
-            {{ form_row(form.anio, {
-                'attr': {
-                    'required': 'required',
-                    'pattern': '^[0-9]{4}$',
-                    'min': '1900',
-                    'title': 'Ingrese un año válido de 4 dígitos (ej: 2025)'
-                }
-            }) }}
+    <div class="card shadow-sm mb-3 p-3">
+        <div class="form-group mb-4">
+            {{ form_label(form.version) }}
+            <div class="input-group">
+                {{ form_widget(form.version, {'attr': {'class': 'form-select form-select-lg'}}) }}
+                <button class="btn btn-primary btn-sm ms-2" type="button" id="btn-add-nested-version">
+                    <i class="fa fa-plus"></i>
+                </button>
+            </div>
+            <div class="text-danger form-error-message mt-1" data-field-error="version"></div>
         </div>
-        <div class="col-sm-6">
-            {{ form_row(form.plateNumber, {
-                'attr': {
-                    'pattern': '^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$',
-                    'title': 'Formato válido: ABC123 o AB123CD'
-                }
-            }) }}
-        </div>
-        <div class="col-sm-6">
-            {{ form_row(form.color, {
-                'attr': {
-                    'required': 'required',
-                    'title': 'Seleccione un color de la lista',
-                    'list': 'lista-colores'
-                }
-            }) }}
-            <datalist id="lista-colores">
-                <option value="Blanco">
-                <option value="Negro">
-                <option value="Rojo">
-                <option value="Azul">
-                <option value="Verde">
-                <option value="Gris">
-                <option value="Plateado">
-                <option value="Amarillo">
-                <option value="Naranja">
-                <option value="Marrón">
-                <option value="Bordó">
-                <option value="Violeta">
-            </datalist>
-        </div>
-        <div class="col-sm-6">
-            {{ form_row(form.chassis_number, {
-                'attr': {
-                    'required': 'required',
-                    'pattern': '^[A-Za-z0-9]+$',
-                    'title': 'Solo caracteres alfanuméricos'
-                }
-            }) }}
-        </div>
-        <div class="col-sm-6">
-            {{ form_row(form.engine_number, {
-                'attr': {
-                    'required': 'required',
-                    'pattern': '^[A-Za-z0-9]+$',
-                    'title': 'Solo números'
-                }
-            }) }}
-        </div>
-        <div class="col-sm-6">
-            {{ form_row(form.kilometers, {
-                'attr': {
-                    'pattern': '^[0-9]+$',
-                    'title': 'Ingrese solo números enteros'
-                }
-            }) }}
-        </div>
-        <div class="col-sm-6">{{ form_row(form.state) }}</div>
-        <div class="col-sm-6">{{ form_row(form.entry_date) }}</div>
-    </div>
-    
-    <hr>
-    <h5 class="mb-3">Información de Compra</h5>
-
-    <div class="form-group">
-        {{ form_label(form.supplier) }}
-        <div class="input-group">
-            {{ form_widget(form.supplier) }}
-            <button class="btn btn-primary" type="button" id="btn-add-nested-proveedor">
-                <i class="fa fa-plus"></i>
-            </button>
-        </div>
-        <div class="text-danger form-error-message mt-1" data-field-error="supplier"></div>
-    </div>
-    {% if is_granted('ROLE_PRICE') %}
-        <div class="row">
+        <div class="row g-3">
             <div class="col-sm-6">
-                {{ form_row(form.purchase_price, {
-                    'attr': {
-                        'pattern': '^[0-9]+(\\.[0-9]+)?$',
-                        'title': 'Ingrese un número positivo (entero o decimal)'
-                    }
-                }) }}
+                {{ form_row(form.anio, {'attr': {'required': 'required', 'pattern': '^[0-9]{4}$', 'min': '1900', 'title': 'Ingrese un año válido de 4 dígitos (ej: 2025)'}}) }}
+            </div>
+            <div class="col-sm-6 d-flex align-items-center">
+                <div class="form-check">
+                    <input type="checkbox" id="vehiculo-0km" class="form-check-input">
+                    <label for="vehiculo-0km" class="form-check-label fw-semibold">0 KM</label>
+                </div>
             </div>
             <div class="col-sm-6">
-                {{ form_row(form.suggested_retail_price, {
-                    'attr': {
-                        'required': 'required',
-                        'pattern': '^[0-9]+(\\.[0-9]+)?$',
-                        'title': 'Ingrese un número positivo (entero o decimal)'
-                    }
-                }) }}
+                {{ form_row(form.plateNumber, {'attr': {'required': 'required','pattern': '^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$', 'title': 'Formato válido: ABC123 o AB123CD'}}) }}
             </div>
+            <div class="col-sm-6">
+                {{ form_row(form.color, {'attr': {'required': 'required','title': 'Seleccione un color de la lista','list': 'lista-colores'}}) }}
+                <datalist id="lista-colores">
+                    <option value="Blanco"><option value="Negro"><option value="Rojo"><option value="Azul">
+                    <option value="Verde"><option value="Gris"><option value="Plateado"><option value="Amarillo">
+                    <option value="Naranja"><option value="Marrón"><option value="Bordó"><option value="Violeta">
+                </datalist>
+            </div>
+            <div class="col-sm-6">{{ form_row(form.chassis_number, {'attr': {'required': 'required','pattern': '^[A-Za-z0-9]+$','title': 'Solo caracteres alfanuméricos'}}) }}</div>
+            <div class="col-sm-6">{{ form_row(form.engine_number, {'attr': {'required': 'required','pattern': '^[A-Za-z0-9]+$','title': 'Solo números'}}) }}</div>
+            <div class="col-sm-6">{{ form_row(form.kilometers, {'attr': {'pattern': '^[0-9]+$','title': 'Ingrese solo números enteros'}}) }}</div>
+            <div class="col-sm-6">{{ form_row(form.state) }}</div>
+            <div class="col-sm-6">{{ form_row(form.entry_date) }}</div>
         </div>
-    {% endif %}
-    
-    {{ form_row(form.internal_observations) }}
-    
-    <hr>
-    {{ form_row(form.purchaseDocumentFile) }}
-
-    <div class="form-group">
-        {{ form_label(form.imagenesVehiculos) }}
-        <ul class="list-unstyled" 
-            id="imagenes-collection" 
-            data-prototype="{{ form_widget(form.imagenesVehiculos.vars.prototype)|e('html_attr') }}"
-            data-index="{{ form.imagenesVehiculos|length }}">
-            
-            {% for imagenForm in form.imagenesVehiculos %}
-                <li class="mb-2">
-                    {{ form_row(imagenForm.imageFile) }}
-                </li>
-            {% endfor %}
-        </ul>
-        <button type="button" id="btn-add-imagen" class="btn btn-secondary btn-sm mt-2">
-            <i class="fa fa-plus"></i> Agregar imagen
-        </button>
     </div>
 
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <hr class="my-4">
+
+    <h5 class="mb-3 text-primary fw-bold">Información de Compra</h5>
+    <div class="card shadow-sm p-3 mb-3">
+        <div class="form-group mb-4">
+            {{ form_label(form.supplier) }}
+            <div class="input-group">
+                {{ form_widget(form.supplier) }}
+                <button class="btn btn-primary btn-sm ms-2" type="button" id="btn-add-nested-proveedor">
+                    <i class="fa fa-plus"></i>
+                </button>
+            </div>
+            <div class="text-danger form-error-message mt-1" data-field-error="supplier"></div>
+        </div>
+
+        {% if is_granted('ROLE_PRICE') %}
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6">{{ form_row(form.purchase_price, {'attr': {'pattern': '^[0-9]+(\\.[0-9]+)?$','title': 'Ingrese un número positivo (entero o decimal)'}}) }}</div>
+            <div class="col-sm-6">{{ form_row(form.suggested_retail_price, {'attr': {'required': 'required','pattern': '^[0-9]+(\\.[0-9]+)?$','title': 'Ingrese un número positivo (entero o decimal)'}}) }}</div>
+        </div>
+        {% endif %}
+
+        {{ form_row(form.internal_observations) }}
+        {{ form_row(form.purchaseDocumentFile) }}
+
+        <div class="form-group">
+            {{ form_label(form.imagenesVehiculos) }}
+            <ul class="list-unstyled border rounded p-2" 
+                id="imagenes-collection" 
+                data-prototype="{{ form_widget(form.imagenesVehiculos.vars.prototype)|e('html_attr') }}"
+                data-index="{{ form.imagenesVehiculos|length }}">
+                
+                {% for imagenForm in form.imagenesVehiculos %}
+                    <li class="mb-2">{{ form_row(imagenForm.imageFile) }}</li>
+                {% endfor %}
+            </ul>
+            <button type="button" id="btn-add-imagen" class="btn btn-secondary btn-sm mt-2">
+                <i class="fa fa-plus"></i> Agregar imagen
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-footer border-top pt-3">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="submit" class="btn btn-primary">
             <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> Guardar
         </button>
     </div>
+
 {{ form_end(form) }}

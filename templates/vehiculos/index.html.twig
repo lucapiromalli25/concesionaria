@@ -36,7 +36,9 @@
                                 <th>Patente</th>
                                 <th>Año</th>
                                 <th>Color</th>
-                                <th>Precio Venta</th>
+                                {% if is_granted("ROLE_PRICE") %}
+                                    <th>Precio Venta</th>
+                                {% endif %}
                                 <th>Observaciones</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acciones</th>
@@ -49,7 +51,9 @@
                                 <th>Patente</th>
                                 <th>Año</th>
                                 <th>Color</th>
-                                <th>Precio Venta</th>
+                                {% if is_granted("ROLE_PRICE") %}
+                                    <th>Precio Venta</th>
+                                {% endif %}
                                 <th>Observaciones</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acciones</th>
@@ -66,8 +70,10 @@
                                 <td class="vehiculo-plate">{{ vehiculo.plateNumber }}</td>
                                 <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
                                 <td class="vehiculo-color">{{ vehiculo.color }}</td>
-                                <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
-                                <td class="vehiculo-precio">{{ vehiculo.internalObservations }}</td>
+                                {% if is_granted("ROLE_PRICE") %}
+                                    <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
+                                {% endif %}
+                                <td class="vehiculo-observations">{{ vehiculo.internalObservations }}</td>
                                 <td>
                                     {% if vehiculo.state == 'Vendido' %}<span class="badge bg-success">Vendido</span>
                                     {% elseif vehiculo.state == 'Reservado' %}<span class="badge bg-warning text-dark">Reservado</span>
@@ -153,15 +159,19 @@
         function initializeSelect2(selector) {
             $(selector).select2({ dropdownParent: $(selector).closest('.modal') });
         }
+        const checkbox0km = document.getElementById('vehiculo-0km');
 
+        
         // --- MANEJO DE APERTURA DE MODALES ---
         function openMainModal(url, title) {
              modalTitle.textContent = title;
              fetch(url)
                 .then(r => r.text()).then(html => {
                     modalBody.innerHTML = html;
+                    
                     initializeSelect2('#formModal .form-select');
                     initializeImageCollection();
+                    initializeCheckbox0km();
                     formModal.show();
                     attachFormSubmitListener();
                 });
@@ -185,6 +195,7 @@
         }
         
         modalBody.addEventListener('click', function(e) {
+            
             if (e.target.closest('#btn-add-nested-version')) {
                 nestedModalTitle.textContent = 'Nueva Versión';
                 fetch('{{ path('app_versiones_new') }}').then(r => r.text()).then(html => {
@@ -346,5 +357,29 @@
             "order": [[ 0, "desc" ]]
         });
     });
+
+    function initializeCheckbox0km() {
+        const checkbox0km = document.getElementById('vehiculo-0km');
+        const plateInput = document.getElementById('vehiculos_plateNumber'); // Ajusta si el id es distinto
+
+        if (!checkbox0km || !plateInput) return;
+
+        // Estado inicial
+        plateInput.disabled = checkbox0km.checked;
+        if (checkbox0km.checked) {
+            plateInput.removeAttribute('required');
+        }
+
+        checkbox0km.addEventListener('change', function () {
+            if (this.checked) {
+                plateInput.value = '';
+                plateInput.removeAttribute('required');
+                plateInput.disabled = true;
+            } else {
+                plateInput.setAttribute('required', 'required');
+                plateInput.disabled = false;
+            }
+        });
+    }
     </script>
 {% endblock %}
