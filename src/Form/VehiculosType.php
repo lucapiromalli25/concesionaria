@@ -17,9 +17,18 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use App\Entity\Proveedores;
 use Vich\UploaderBundle\Form\Type\VichFileType; 
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class VehiculosType extends AbstractType
 {
+    private $security;
+
+    public function __construct(Security $security)
+    {
+        $this->security = $security;
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -71,16 +80,6 @@ class VehiculosType extends AbstractType
                 'widget' => 'single_text',
                 'required' => false,
             ])
-            ->add('purchase_price', MoneyType::class, [
-                'label' => 'Precio de Compra',
-                'currency' => 'USD',
-                'required' => false,
-            ])
-            ->add('suggested_retail_price', MoneyType::class, [
-                'label' => 'Precio Venta (Sugerido)',
-                'currency' => 'USD',
-                'required' => false,
-            ])
             ->add('internal_observations', TextareaType::class, [
                 'label' => 'Observaciones Internas',
                 'required' => false,
@@ -102,6 +101,20 @@ class VehiculosType extends AbstractType
                 'delete_label' => 'Eliminar documento actual',
                 'download_uri' => false,
             ]);
+
+            if ($this->security->isGranted('ROLE_PRECIO')) {
+                $builder
+                ->add('purchase_price', MoneyType::class, [
+                    'label' => 'Precio de Compra',
+                    'currency' => 'USD',
+                    'required' => false,
+                ])
+                ->add('suggested_retail_price', MoneyType::class, [
+                    'label' => 'Precio Venta (Sugerido)',
+                    'currency' => 'USD',
+                    'required' => false,
+                ]);
+            }
     }
 
     public function configureOptions(OptionsResolver $resolver): void

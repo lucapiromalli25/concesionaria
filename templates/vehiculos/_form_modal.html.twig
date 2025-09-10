@@ -27,7 +27,6 @@
         <div class="col-sm-6">
             {{ form_row(form.plateNumber, {
                 'attr': {
-                    'required': 'required',
                     'pattern': '^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$',
                     'title': 'Formato válido: ABC123 o AB123CD'
                 }
@@ -69,7 +68,7 @@
             {{ form_row(form.engine_number, {
                 'attr': {
                     'required': 'required',
-                    'pattern': '^[0-9]+$',
+                    'pattern': '^[A-Za-z0-9]+$',
                     'title': 'Solo números'
                 }
             }) }}
@@ -99,26 +98,27 @@
         </div>
         <div class="text-danger form-error-message mt-1" data-field-error="supplier"></div>
     </div>
-    
-    <div class="row">
-        <div class="col-sm-6">
-            {{ form_row(form.purchase_price, {
-                'attr': {
-                    'pattern': '^[0-9]+(\\.[0-9]+)?$',
-                    'title': 'Ingrese un número positivo (entero o decimal)'
-                }
-            }) }}
+    {% if is_granted('ROLE_PRICE') %}
+        <div class="row">
+            <div class="col-sm-6">
+                {{ form_row(form.purchase_price, {
+                    'attr': {
+                        'pattern': '^[0-9]+(\\.[0-9]+)?$',
+                        'title': 'Ingrese un número positivo (entero o decimal)'
+                    }
+                }) }}
+            </div>
+            <div class="col-sm-6">
+                {{ form_row(form.suggested_retail_price, {
+                    'attr': {
+                        'required': 'required',
+                        'pattern': '^[0-9]+(\\.[0-9]+)?$',
+                        'title': 'Ingrese un número positivo (entero o decimal)'
+                    }
+                }) }}
+            </div>
         </div>
-        <div class="col-sm-6">
-            {{ form_row(form.suggested_retail_price, {
-                'attr': {
-                    'required': 'required',
-                    'pattern': '^[0-9]+(\\.[0-9]+)?$',
-                    'title': 'Ingrese un número positivo (entero o decimal)'
-                }
-            }) }}
-        </div>
-    </div>
+    {% endif %}
     
     {{ form_row(form.internal_observations) }}
     
