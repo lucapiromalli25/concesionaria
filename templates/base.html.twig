@@ -95,6 +95,10 @@ sessionStorage.fonts = true;
 										<i class="fas fa-users"></i>
 										<p>Clientes</p>
 									</a>
+									<a href="{{ path('app_proveedores_index') }}">
+										<i class="fas fa-user-tie"></i>
+										<p>Proveedores</p>
+									</a>
 									<a href="{{ path('app_ventas_index') }}">
 										<i class="fas fa-file-invoice-dollar"></i>
 										<p>Ventas</p>
@@ -123,11 +127,6 @@ sessionStorage.fonts = true;
 											<li>
 												<a href="{{ path('app_versiones_index') }}">
 													<span class="sub-item">Versiones</span>
-												</a>
-											</li>
-											<li>
-												<a href="{{ path('app_proveedores_index') }}">
-													<span class="sub-item">Proveedores</span>
 												</a>
 											</li>
 											{% if is_granted('ROLE_CREATE_USER') %}
