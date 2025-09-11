@@ -18,7 +18,16 @@
     {# --- DATOS PRINCIPALES DE LA VENTA --- #}
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header"><h4 class="card-title">Información General</h4></div>
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                     <h4 class="card-title mb-0">Información General</h4>
+                     {% if venta.receiptNumber %}
+                        <a href="{{ path('app_ventas_receipt', {'id': venta.id}) }}" target="_blank" class="btn btn-primary btn-sm">
+                            <i class="fas fa-print"></i> Imprimir Recibo General
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -43,7 +52,16 @@
     {# --- TABLA DE CUOTAS --- #}
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header"><h4 class="card-title">Plan de Pagos</h4></div>
+            <div class="card-header">
+                 <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">Plan de Pagos</h4>
+                    {% if not venta.hasPayments() and is_granted('ROLE_PRICE') %}
+                        <button class="btn btn-warning btn-sm" id="btn-modificar-plan">
+                            <i class="fas fa-edit"></i> Modificar Plan
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
             <div class="card-body">
                 <table class="table table-hover">
                     <thead>
@@ -57,44 +75,42 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for cuota in venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
-                            <tr>
-                                <td><strong>{{ cuota.installmentNumber }}</strong></td>
-                                <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
-                                <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
-                                <td>
-                                    {% if cuota.status == 'Pagada' %}
-                                        <span class="badge bg-success">Pagada</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">Pendiente</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
-                                <td class="text-end">
-                                    {% if cuota.status == 'Pendiente' %}
-                                        <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
-                                            Registrar Pago
-                                        </button>
-                                    {% endif %}
-
-                                    {% if cuota.receiptName %}
-                                        <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido">
-                                            <i class="fas fa-paperclip"></i> Comprobante
-                                        </a>
-                                    {% endif %}
-                                    
-                                    {% if cuota.receiptNumber %}
-                                        <a href="{{ path('app_cuotas_receipt', {'id': cuota.id}) }}" target="_blank" class="btn btn-info btn-sm" title="Ver Recibo PDF">
-                                            <i class="fas fa-receipt"></i> Recibo
-                                        </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center">Esta venta no tiene un plan de cuotas asociado.</td>
-                            </tr>
-                        {% endfor %}
+                    {% for cuota in venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
+                        <tr>
+                            <td><strong>{{ cuota.installmentNumber }}</strong></td>
+                            <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
+                            <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
+                            <td>
+                                {% if cuota.status == 'Pagada' %}
+                                    <span class="badge bg-success">Pagada</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
+                            <td class="text-end">
+                                {% if cuota.status == 'Pendiente' %}
+                                    <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
+                                        Registrar Pago
+                                    </button>
+                                {% endif %}
+                                {% if cuota.receiptName %}
+                                    <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido">
+                                        <i class="fas fa-paperclip"></i> Comprobante
+                                    </a>
+                                {% endif %}
+                                {% if cuota.receiptNumber %}
+                                    <a href="{{ path('app_cuotas_receipt', {'id': cuota.id}) }}" target="_blank" class="btn btn-info btn-sm" title="Ver Recibo PDF">
+                                        <i class="fas fa-receipt"></i> Recibo
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">Esta venta no tiene un plan de cuotas asociado.</td>
+                        </tr>
+                    {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -106,12 +122,22 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="paymentModalLabel">Registrar Pago de Cuota</h5>
+        <h5 class="modal-title" id="paymentModalLabel"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="payment-modal-body-content">
-        {# El formulario para registrar el pago se cargará aquí #}
+      <div class="modal-body" id="payment-modal-body-content"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modifyPlanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modifyPlanModalLabel">Modificar Plan de Pagos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+      <div class="modal-body" id="modify-plan-modal-body"></div>
     </div>
   </div>
 </div>
@@ -160,30 +186,34 @@
                         // Descarga automática del RECIBO PDF
                         window.open(data.cuota.reciboUrl, '_blank');
                         
-                        // Actualizar la fila en la tabla dinámicamente
-                        const row = tablaBody.querySelector(`button[data-cuota-id="${data.cuota.id}"]`).closest('tr');
-                        if(row) {
-                            row.children[3].innerHTML = `<span class="badge bg-success">${data.cuota.status}</span>`;
-                            row.children[4].textContent = data.cuota.paymentDate;
-
-                            // Generamos los nuevos botones
-                            let actionsHtml = '';
-                            if (data.cuota.comprobanteUrl) {
-                                actionsHtml += `<a href="${data.cuota.comprobanteUrl}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido"><i class="fas fa-paperclip"></i> Comprobante</a> `;
-                            }
-                            if (data.cuota.reciboUrl) {
-                                actionsHtml += `<a href="${data.cuota.reciboUrl}" target="_blank" class="btn btn-info btn-sm" title="Ver Recibo PDF"><i class="fas fa-receipt"></i> Recibo</a>`;
-                            }
-                            row.children[5].innerHTML = actionsHtml;
-                        }
+                        // Recargamos la página después de un breve momento para que el usuario vea el cambio
+                        setTimeout(() => { window.location.reload(); }, 500);
                     } else {
-                        // ... manejo de errores
+                        // Aquí podrías manejar errores de validación si los hubiera
+                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
                     }
                 })
                 .finally(() => {
                     spinner.classList.add('d-none');
                     btn.disabled = false;
                 });
+            });
+        }
+        
+        // --- LÓGICA PARA MODIFICAR PLAN DE PAGOS ---
+        const modifyPlanModal = new bootstrap.Modal(document.getElementById('modifyPlanModal'));
+        const modifyPlanModalBody = document.getElementById('modify-plan-modal-body');
+        const btnModificarPlan = document.getElementById('btn-modificar-plan');
+
+        if (btnModificarPlan) {
+            btnModificarPlan.addEventListener('click', function() {
+                const url = '{{ path('app_plan_de_pagos_modificar', {'id': venta.id}) }}';
+                fetch(url)
+                    .then(r => r.text()).then(html => {
+                        modifyPlanModalBody.innerHTML = html;
+                        modifyPlanModal.show();
+                        // No necesitamos un listener AJAX aquí, el formulario se enviará de forma tradicional
+                    });
             });
         }
     });

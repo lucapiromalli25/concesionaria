@@ -1,0 +1,14 @@
+{% set form_action = path('app_plan_de_pagos_modificar', {'id': venta.id}) %}
+{{ form_start(form, {'action': form_action, 'attr': {'id': 'formModificarPlan'}}) }}
+    
+    <p>Actual plan: <strong>{{ venta.numberOfInstallments }} cuotas</strong> de ${{ (venta.finalSalePrice / venta.numberOfInstallments)|number_format(2, ',', '.') }}</p>
+    
+    {{ form_row(form.numberOfInstallments) }}
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none"></span> Actualizar Plan
+        </button>
+    </div>
+{{ form_end(form) }}

@@ -32,9 +32,18 @@ class VentaType extends AbstractType
                 'widget' => 'single_text',
                 'data' => new \DateTime('now') // Pone la fecha actual por defecto
             ])
+            ->add('saleCurrency', ChoiceType::class, [
+                'label' => 'Moneda de la Venta',
+                'choices' => [
+                    'Pesos (ARS)' => 'ARS',
+                    'Dólares (USD)' => 'USD',
+                ],
+                'attr' => ['class' => 'form-select']
+            ])
             ->add('final_sale_price', MoneyType::class, [
                 'label' => 'Precio Final de Venta',
-                'currency' => 'USD' // O la moneda que uses
+                'currency' => false, // La moneda se define en el campo de arriba
+                'attr' => ['placeholder' => 'Ej: 25000']
             ])
             ->add('payment_method', ChoiceType::class, [
                 'label' => 'Método de Pago',

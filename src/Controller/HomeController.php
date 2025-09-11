@@ -9,13 +9,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Repository\ReservasRepository;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class HomeController extends AbstractController
 {
     #[Route('/home', name: 'app_home')]
     #[Route('/', name: 'app_root')]
     #[IsGranted('ROLE_USER')]
-    public function index(VehiculosRepository $vehiculosRepo, VentasRepository $ventasRepo, ReservasRepository $reservasRepo): Response
+    public function index(VehiculosRepository $vehiculosRepo, VentasRepository $ventasRepo, ReservasRepository $reservasRepo, HttpClientInterface $httpClient): Response
     {
         // --- KPIs Principales ---
         $totalVehiculos = $vehiculosRepo->countInStock();
@@ -130,6 +131,26 @@ class HomeController extends AbstractController
             $salespersonChartData['salesCount'][] = (int) $salesperson['salesCount'];
             $salespersonChartData['salesAmount'][] = (float) $salesperson['salesAmount'];
         }
+
+        $dolarRates = [];
+        try {
+            $response = $httpClient->request('GET', 'https://dolarapi.com/v1/dolares');
+            if ($response->getStatusCode() === 200) {
+                $rates = $response->toArray();
+                // Buscamos las cotizaciones que nos interesan
+                foreach ($rates as $rate) {
+                    if ($rate['casa'] === 'oficial') {
+                        $dolarRates['oficial'] = $rate;
+                    }
+                    if ($rate['casa'] === 'blue') {
+                        $dolarRates['blue'] = $rate;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Si la API falla, no hacemos nada y la tarjeta no se mostrará.
+            // Podrías loguear el error si quisieras: error_log($e->getMessage());
+        }
         
         // --- Renderizar la plantilla con todas las variables ---
         return $this->render('home/index.html.twig', [
@@ -146,6 +167,7 @@ class HomeController extends AbstractController
             'topSalespersons' => $topSalespersons,
             'ultimosIngresos' => $ultimosIngresos,
             'salespersonChartData' => $salespersonChartData,
+            'dolarRates' => $dolarRates,
         ]);
     }
 }

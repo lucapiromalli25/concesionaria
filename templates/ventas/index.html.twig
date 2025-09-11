@@ -18,11 +18,12 @@
                     <table class="table table-hover" id="tabla-ventas">
                         <thead>
                             <tr>
-                                <th>ID Venta</th>
                                 <th>Fecha</th>
                                 <th>Vehículo</th>
+                                <th>Patente</th>
                                 <th>Cliente</th>
                                 <th>Vendedor</th>
+                                <th>Estado de Deuda</th>
                                 <th class="text-end">Precio Final</th>
                                 <th class="text-end">Acciones</th>
                             </tr>
@@ -30,16 +31,26 @@
                         <tbody>
                         {% for venta in ventas %}
                             <tr>
-                                <td>{{ venta.id }}</td>
                                 <td>{{ venta.saleDate|date('d/m/Y') }}</td>
                                 <td>
                                     <span class="fw-bold">{{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}</span><br>
                                     <small>{{ venta.vehiculo.version.name }} ({{ venta.vehiculo.anio }})</small>
                                 </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ venta.vehiculo.plateNumber|default('N/A') }}</span> {# <-- NUEVA CELDA #}
+                                </td>
                                 <td>{{ venta.cliente.firstName }} {{ venta.cliente.lastName }}</td>
                                 <td>{{ venta.vendedor.completeName }}</td>
+                                <td>
+                                    {% set debtStatus = venta.getDebtStatus() %}
+                                    {% if debtStatus == 'Con Deuda' %}
+                                        <span class="badge bg-danger">{{ debtStatus }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ debtStatus }}</span>
+                                    {% endif %}
+                                </td>
                                 <td class="text-end fw-bold text-success">${{ venta.finalSalePrice|number_format(2, ',', '.') }}</td>
-                                <td class="text-end"> {# <-- NUEVA CELDA #}
+                                <td class="text-end">
                                     <a href="{{ path('app_ventas_show', {'id': venta.id}) }}" class="btn btn-info btn-sm">Ver Detalles</a>
                                 </td>
                             </tr>

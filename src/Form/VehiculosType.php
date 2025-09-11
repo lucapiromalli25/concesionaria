@@ -113,6 +113,16 @@ class VehiculosType extends AbstractType
                     'label' => 'Precio Venta (Sugerido)',
                     'currency' => 'USD',
                     'required' => false,
+                ])
+                ->add('purchasePriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
+                    'label' => 'Precio de Compra (USD)',
+                    'currency' => 'USD',
+                    'required' => false,
+                ])
+                ->add('suggestedRetailPriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
+                    'label' => 'Precio Venta (Sugerido, USD)',
+                    'currency' => 'USD',
+                    'required' => false,
                 ]);
             }
     }

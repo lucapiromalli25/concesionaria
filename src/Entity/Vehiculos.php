@@ -99,6 +99,12 @@ class Vehiculos
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $purchaseDocumentName = null;
 
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $purchasePriceUsd = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $suggestedRetailPriceUsd = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -405,6 +411,28 @@ class Vehiculos
     public function getPurchaseDocumentName(): ?string
     {
         return $this->purchaseDocumentName;
+    }
+
+    public function getPurchasePriceUsd(): ?string
+    {
+        return $this->purchasePriceUsd;
+    }
+
+    public function setPurchasePriceUsd(?string $purchasePriceUsd): static
+    {
+        $this->purchasePriceUsd = $purchasePriceUsd;
+        return $this;
+    }
+
+    public function getSuggestedRetailPriceUsd(): ?string
+    {
+        return $this->suggestedRetailPriceUsd;
+    }
+
+    public function setSuggestedRetailPriceUsd(?string $suggestedRetailPriceUsd): static
+    {
+        $this->suggestedRetailPriceUsd = $suggestedRetailPriceUsd;
+        return $this;
     }
 
 }

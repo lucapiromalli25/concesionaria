@@ -71,6 +71,8 @@ class Ventas
     #[ORM\Column(length: 50, unique: true, nullable: true)]
     private ?string $receiptNumber = null;
 
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $saleCurrency = 'ARS';
     public function __construct()
     {
         $this->cuotas = new ArrayCollection();
@@ -332,6 +334,45 @@ class Ventas
     public function setReceiptNumber(?string $receiptNumber): static
     {
         $this->receiptNumber = $receiptNumber;
+        return $this;
+    }
+
+    public function hasPayments(): bool
+    {
+        foreach ($this->cuotas as $cuota) {
+            if ($cuota->getStatus() === 'Pagada') {
+                return true; // Se encontró al menos un pago
+            }
+        }
+        return false; // No hay pagos registrados
+    }
+
+    public function getDebtStatus(): string
+    {
+        // Si la venta no fue financiada, nunca tuvo deuda.
+        /*if ($this->getPaymentMethod() !== 'Financiado') {
+            return 'Sin Deuda';
+        }*/
+
+        // Si es financiada, revisamos las cuotas.
+        foreach ($this->cuotas as $cuota) {
+            // Si encontramos al menos una cuota pendiente, la venta tiene deuda.
+            if ($cuota->getStatus() === 'Pendiente') {
+                return 'Con Deuda';
+            }
+        }
+        // Si el bucle termina y no encontró ninguna cuota pendiente, está saldada.
+        return 'Sin Deuda';
+    }
+
+    public function getSaleCurrency(): ?string
+    {
+        return $this->saleCurrency;
+    }
+
+    public function setSaleCurrency(?string $saleCurrency): static
+    {
+        $this->saleCurrency = $saleCurrency;
         return $this;
     }
 }

@@ -23,6 +23,51 @@
         </div>
     </div>
 
+    {% if dolarRates is not empty %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Cotización Dólar</div>
+    </div>
+    <div class="card-body">
+        {% if dolarRates.oficial is defined %}
+            <div class="d-flex justify-content-between mb-2">
+                <span class="fw-bold">Dólar Oficial</span>
+                <span class="text-muted">Actualizado: {{ dolarRates.oficial.fechaActualizacion|date('H:i') }}hs</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <small>Compra</small>
+                    <p class="fw-bold m-0">${{ dolarRates.oficial.compra|number_format(2, ',', '.') }}</p>
+                </div>
+                <div class="text-end">
+                    <small>Venta</small>
+                    <p class="fw-bold m-0 text-success">${{ dolarRates.oficial.venta|number_format(2, ',', '.') }}</p>
+                </div>
+            </div>
+        {% endif %}
+        
+        <hr>
+
+        {% if dolarRates.blue is defined %}
+            <div class="d-flex justify-content-between mb-2">
+                <span class="fw-bold">Dólar Blue</span>
+                 <span class="text-muted">Actualizado: {{ dolarRates.blue.fechaActualizacion|date('H:i') }}hs</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <small>Compra</small>
+                    <p class="fw-bold m-0">${{ dolarRates.blue.compra|number_format(2, ',', '.') }}</p>
+                </div>
+                <div class="text-end">
+                    <small>Venta</small>
+                    <p class="fw-bold m-0 text-success">${{ dolarRates.blue.venta|number_format(2, ',', '.') }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
     {# --- FILA SUPERIOR: INDICADORES CLAVE (KPIs) --- #}
     {# --- FILA SUPERIOR: INDICADORES CLAVE (KPIs) --- #}
 <div class="row">
