@@ -29,6 +29,8 @@ class VentaController extends AbstractController
         ]);
     }
 
+    // src/Controller/VentaController.php
+
     #[Route('/new/{id}', name: 'app_ventas_new', methods: ['GET', 'POST'])]
     public function new(Request $request, Vehiculos $vehiculo, EntityManagerInterface $entityManager): Response
     {
@@ -43,7 +45,7 @@ class VentaController extends AbstractController
 
         // Si el auto está reservado, pre-seleccionamos al cliente y el precio
         if ($reserva = $vehiculo->getReserva()) {
-            $venta->setCliente($reserva->getCliente());
+            $venta->setCliente($reserva->getClient());
             $venta->setFinalSalePrice($vehiculo->getSuggestedRetailPrice());
         }
 
@@ -67,42 +69,38 @@ class VentaController extends AbstractController
             $venta->setCreatedAt(new \DateTimeImmutable());
             $venta->setUpdatedBy($this->getUser());
             $venta->setUpdatedAt(new \DateTimeImmutable());
+            
             $entityManager->persist($venta);
 
-            // --- LÓGICA PARA GENERAR CUOTAS ---
-            if (($venta->getPaymentMethod() === 'Financiado' || $venta->getPaymentMethod() === 'Efectivo' || $venta->getPaymentMethod() === 'Transferencia Bancaria' || $venta->getPaymentMethod() === 'Otro') && $venta->getNumberOfInstallments() >= 0) {
-                $numeroDeCuotas = $venta->getNumberOfInstallments();
-                if ($numeroDeCuotas === 0 || $numeroDeCuotas === null) {
-                    $numeroDeCuotas = 1; // Si es 0, se considera como 1 cuota (pago único)
-                }
-                $montoCuota = $venta->getFinalSalePrice() / $numeroDeCuotas;
-                $fechaVenta = $venta->getSaleDate();
+            // --- LÓGICA PARA PROCESAR CUOTAS ---
+            $installmentsDataJson = $request->request->get('installments_data');
+            $installmentsData = json_decode($installmentsDataJson, true);
 
-                for ($i = 1; $i <= $numeroDeCuotas; $i++) {
+            if ($venta->getPaymentMethod() === 'Financiado' && is_array($installmentsData)) {
+                $numeroDeCuota = 1;
+                foreach ($installmentsData as $data) {
                     $cuota = new Cuotas();
                     $cuota->setVenta($venta);
-                    $cuota->setInstallmentNumber($i);
-                    $cuota->setAmount($montoCuota);
+                    $cuota->setInstallmentNumber($numeroDeCuota);
+                    $cuota->setAmount($data['amount']);
+                    $cuota->setDueDate(new \DateTimeImmutable($data['dueDate']));
                     $cuota->setStatus('Pendiente');
                     
-                    // Calcula la fecha de vencimiento para el mes siguiente
-                    $fechaVencimiento = (clone $fechaVenta)->modify("first day of +{$i} month");
-                    $cuota->setDueDate($fechaVencimiento);
-
-                    // La auditoría de la cuota también debería ser manejada
-                    // (Si tienes un Listener, lo hará automático, si no, hay que añadirla aquí)
-                    
                     $entityManager->persist($cuota);
+                    $numeroDeCuota++;
                 }
+                $venta->setNumberOfInstallments(count($installmentsData));
             }
-            // --- FIN DE LA LÓGICA DE CUOTAS ---
+            
+            // 1. PRIMER GUARDADO: Se guarda la venta y las cuotas, y se genera el ID de la venta.
+            $entityManager->flush(); 
 
-            $entityManager->flush(); // Guarda la venta Y todas las cuotas a la vez
-
-            if ($venta->getPaymentMethod() !== 'Financiado') {
-                $venta->setReceiptNumber('RV-' . str_pad($venta->getId(), 6, '0', STR_PAD_LEFT));
-                $entityManager->flush();
-            }
+            // 2. GENERACIÓN Y GUARDADO DEL NÚMERO DE RECIBO
+            
+            $venta->setReceiptNumber('RV-' . str_pad($venta->getId(), 6, '0', STR_PAD_LEFT));
+            // 3. SEGUNDO GUARDADO: Persistimos el número de recibo que acabamos de generar.
+            $entityManager->flush(); 
+            
 
             $this->addFlash('success', '¡Venta registrada con éxito!');
             return $this->redirectToRoute('app_ventas_success', ['id' => $venta->getId()]);

@@ -57,14 +57,12 @@
             <div class="text-danger form-error-message mt-1" data-field-error="supplier"></div>
         </div>
 
-        {% if is_granted('ROLE_PRICE') %}
         <div class="row g-3 mb-3">
             <div class="col-sm-6">{{ form_row(form.purchase_price, {'attr': {'pattern': '^[0-9]+(\\.[0-9]+)?$','title': 'Ingrese un número positivo (entero o decimal)'}}) }}</div>
             <div class="col-sm-6">{{ form_row(form.suggested_retail_price, {'attr': {'required': 'required','pattern': '^[0-9]+(\\.[0-9]+)?$','title': 'Ingrese un número positivo (entero o decimal)'}}) }}</div>
             <div class="col-sm-6">{{ form_row(form.purchasePriceUsd, {'attr': {'pattern': '^[0-9]+(\\.[0-9]+)?$','title': 'Ingrese un número positivo (entero o decimal)'}}) }}</div>
             <div class="col-sm-6">{{ form_row(form.suggestedRetailPriceUsd, {'attr': {'required': 'required','pattern': '^[0-9]+(\\.[0-9]+)?$','title': 'Ingrese un número positivo (entero o decimal)'}}) }}</div>
         </div>
-        {% endif %}
 
         {{ form_row(form.internal_observations) }}
         {{ form_row(form.purchaseDocumentFile) }}

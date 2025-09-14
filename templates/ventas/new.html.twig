@@ -32,7 +32,8 @@
         <div class="card">
             <div class="card-header"><h4 class="card-title">Datos de la Venta</h4></div>
             <div class="card-body">
-                {{ form_start(form) }}
+                {# Usamos un <form> normal en lugar de form_start para tener control total #}
+                <form name="venta" method="post" action="{{ path('app_ventas_new', {'id': vehiculo.id}) }}" enctype="multipart/form-data">
                     <div class="form-group">
                         {{ form_label(form.cliente) }}
                         <div class="input-group">
@@ -44,20 +45,43 @@
                         <div class="text-danger form-error-message mt-1" data-field-error="cliente"></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">{{ form_row(form.sale_date) }}</div>
+                        <div class="col-md-4">{{ form_row(form.sale_date) }}</div>
                         <div class="col-md-4">{{ form_row(form.saleCurrency) }}</div>
-                        <div class="col-md-6">{{ form_row(form.final_sale_price) }}</div>
+                        <div class="col-md-4">{{ form_row(form.final_sale_price) }}</div>
                     </div>
                     {{ form_row(form.payment_method) }}
-                    {{ form_row(form.numberOfInstallments) }}
-                    {{ form_row(form.saleDocumentFile) }}
-                    {{ form_row(form.observations) }}
+
+                    {# --- SECCIÓN DINÁMICA PARA EL PLAN DE PAGOS (HECHA CON JS) --- #}
+                    <div id="installments-section" class="d-none mt-3">
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Plan de Pagos</h5>
+                            <button type="button" class="btn btn-sm btn-primary" id="btn-add-installment">
+                                <i class="fa fa-plus"></i> Añadir Cuota
+                            </button>
+                        </div>
+                        <div class="alert alert-info d-flex justify-content-between p-2">
+                            <span>Total a financiar: <strong id="total-a-financiar">$0.00</strong></span>
+                            <span>Suma de cuotas: <strong id="suma-cuotas">$0.00</strong></span>
+                            <span id="diferencia-cuotas" class="fw-bold"></span>
+                        </div>
+                        <div id="installments-editor">
+                            {# Las filas de cuotas se añadirán aquí con JavaScript #}
+                        </div>
+                    </div>
                     
+                    {{ form_row(form.observations) }}
+                    {{ form_row(form.saleDocumentFile) }}
+                    
+                    {# Campo oculto para enviar los datos de las cuotas al controlador #}
+                    <input type="hidden" name="installments_data" id="installments_data_input">
+                    {{ form_widget(form._token) }} {# Importante para la seguridad de Symfony #}
+
                     <div class="text-end mt-3">
                         <a href="{{ path('app_vehiculos_index') }}" class="btn btn-danger">Cancelar</a>
-                        <button type="submit" class="btn btn-success">Confirmar Venta</button>
+                        <button type="submit" class="btn btn-success" id="btn-confirmar-venta">Confirmar Venta</button>
                     </div>
-                {{ form_end(form) }}
+                </form>
             </div>
         </div>
     </div>
@@ -66,49 +90,125 @@
 <div class="modal fade" id="nestedFormModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="nestedFormModalLabel">Nuevo Cliente</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+      <div class="modal-header"><h5 class="modal-title" id="nestedFormModalLabel">Nuevo Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body" id="nested-modal-body-content"></div>
     </div>
   </div>
 </div>
 {% endblock %}
 
+
 {% block javascripts %}
     {{ parent() }}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // --- INICIALIZACIÓN DE ELEMENTOS ---
+        const mainForm = document.querySelector('form[name="venta"]');
         const clienteSelect = $('#venta_cliente');
-        clienteSelect.select2({
-            placeholder: 'Buscar cliente...',
-            width: '100%'
+        clienteSelect.select2({ placeholder: 'Buscar cliente...', width: '100%' });
+
+        const paymentMethodSelect = document.getElementById('venta_payment_method');
+        const installmentsSection = document.getElementById('installments-section');
+        const addInstallmentBtn = document.getElementById('btn-add-installment');
+        const installmentsEditor = document.getElementById('installments-editor');
+        const confirmSaleBtn = document.getElementById('btn-confirmar-venta');
+        const hiddenInstallmentsInput = document.getElementById('installments_data_input');
+        
+        let cuotaCounter = 0;
+
+        // --- LÓGICA DE VISIBILIDAD DEL PLAN DE PAGOS ---
+        function toggleInstallmentsUI() {
+            const isFinanciado = paymentMethodSelect.value === 'Financiado';
+            installmentsSection.classList.toggle('d-none', !isFinanciado);
+            if (!isFinanciado) {
+                installmentsEditor.innerHTML = '';
+                cuotaCounter = 0;
+            }
+            updateInstallmentSum();
+        }
+        paymentMethodSelect.addEventListener('change', toggleInstallmentsUI);
+        toggleInstallmentsUI();
+
+        // --- AÑADIR/QUITAR FILAS DE CUOTAS ---
+        addInstallmentBtn.addEventListener('click', function() {
+            cuotaCounter++;
+            const newRow = document.createElement('div');
+            newRow.classList.add('row', 'align-items-center', 'mb-2', 'installment-row');
+            
+            newRow.innerHTML = `
+                <div class="col-1"><span class="badge bg-secondary">${cuotaCounter}</span></div>
+                <div class="col-5">
+                    <input type="date" class="form-control due-date-input" required>
+                </div>
+                <div class="col-5">
+                    <input type="number" step="0.01" class="form-control amount-input" placeholder="Monto" required>
+                </div>
+                <div class="col-1">
+                    <button type="button" class="btn btn-danger btn-sm btn-remove-installment w-100"><i class="fa fa-trash"></i></button>
+                </div>
+            `;
+            installmentsEditor.appendChild(newRow);
         });
 
+        installmentsEditor.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-remove-installment')) {
+                e.target.closest('.row.installment-row').remove();
+                
+                installmentsEditor.querySelectorAll('.badge.bg-secondary').forEach((badge, index) => {
+                    badge.textContent = index + 1;
+                });
+                cuotaCounter = installmentsEditor.children.length;
+                updateInstallmentSum();
+            }
+        });
+
+        // --- VALIDACIÓN EN VIVO DE LA SUMA DE CUOTAS ---
+        function updateInstallmentSum() {
+            if (paymentMethodSelect.value !== 'Financiado') {
+                confirmSaleBtn.disabled = false;
+                return;
+            }
+            let sum = 0;
+            installmentsEditor.querySelectorAll('.amount-input').forEach(input => { sum += parseFloat(input.value) || 0; });
+            const totalAmount = parseFloat(document.getElementById('venta_final_sale_price').value) || 0;
+            const diferencia = totalAmount - sum;
+            
+            document.getElementById('total-a-financiar').textContent = '$' + totalAmount.toFixed(2);
+            document.getElementById('suma-cuotas').textContent = '$' + sum.toFixed(2);
+            const diffEl = document.getElementById('diferencia-cuotas');
+            diffEl.textContent = 'Diferencia: $' + diferencia.toFixed(2);
+            
+            if (Math.abs(diferencia) < 0.01 && installmentsEditor.children.length > 0) {
+                diffEl.className = 'fw-bold text-success';
+                confirmSaleBtn.disabled = false;
+            } else {
+                diffEl.className = 'fw-bold text-danger';
+                confirmSaleBtn.disabled = true;
+            }
+        }
+        
+        installmentsEditor.addEventListener('input', updateInstallmentSum);
+        document.getElementById('venta_final_sale_price').addEventListener('input', updateInstallmentSum);
+        
+        // --- PREPARAR DATOS ANTES DEL SUBMIT ---
+        mainForm.addEventListener('submit', function(e) {
+            if (paymentMethodSelect.value === 'Financiado') {
+                const installments = [];
+                installmentsEditor.querySelectorAll('.installment-row').forEach(row => {
+                    installments.push({
+                        dueDate: row.querySelector('.due-date-input').value,
+                        amount: row.querySelector('.amount-input').value
+                    });
+                });
+                hiddenInstallmentsInput.value = JSON.stringify(installments);
+            }
+        });
+
+        // --- LÓGICA DE MODAL ANIDADO PARA CLIENTE (NO CAMBIA) ---
         const nestedModalEl = document.getElementById('nestedFormModal');
         const nestedFormModal = new bootstrap.Modal(nestedModalEl);
         const nestedModalBody = document.getElementById('nested-modal-body-content');
 
-        // --- LÓGICA PARA CAMPO DE CUOTAS CONDICIONAL ---
-        const paymentMethodSelect = document.getElementById('venta_payment_method');
-        const installmentsField = document.getElementById('field-installments');
-
-        function toggleInstallmentsField() {
-            if (installmentsField && paymentMethodSelect.value === 'Financiado') {
-                installmentsField.classList.remove('d-none');
-            } else if (installmentsField) {
-                installmentsField.classList.add('d-none');
-                document.getElementById('venta_numberOfInstallments').value = ''; 
-            }
-        }
-        
-        toggleInstallmentsField(); // Ejecutar al cargar la página
-        paymentMethodSelect.addEventListener('change', toggleInstallmentsField);
-        // --- FIN DE LA LÓGICA CONDICIONAL ---
-
-        // --- MODAL ANIDADO PARA CREAR CLIENTE ---
         document.getElementById('btn-add-nested-cliente').addEventListener('click', function() {
             fetch('{{ path('app_clientes_new') }}')
                 .then(r => r.text()).then(html => {
@@ -121,7 +221,6 @@
         function attachNestedFormSubmitListener() {
             const nestedForm = document.getElementById('formCliente');
             if (!nestedForm) return;
-
             nestedForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const btn = nestedForm.querySelector('button[type="submit"]');
@@ -134,9 +233,7 @@
                     if (data.status === 'success') {
                         const newClient = data.cliente;
                         const newOption = new Option(newClient.displayText, newClient.id, true, true);
-                        
                         clienteSelect.append(newOption).trigger('change');
-                        
                         nestedFormModal.hide();
                         $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
                     } else {

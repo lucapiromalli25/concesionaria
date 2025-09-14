@@ -100,31 +100,28 @@ class VehiculosType extends AbstractType
                 'allow_delete' => true,
                 'delete_label' => 'Eliminar documento actual',
                 'download_uri' => false,
+            ])
+            ->add('purchase_price', MoneyType::class, [
+                'label' => 'Precio de Compra',
+                'currency' => 'USD',
+                'required' => false,
+            ])
+            ->add('suggested_retail_price', MoneyType::class, [
+                'label' => 'Precio Venta (Sugerido)',
+                'currency' => 'USD',
+                'required' => false,
+            ])
+            ->add('purchasePriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
+                'label' => 'Precio de Compra (USD)',
+                'currency' => 'USD',
+                'required' => false,
+            ])
+            ->add('suggestedRetailPriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
+                'label' => 'Precio Venta (Sugerido, USD)',
+                'currency' => 'USD',
+                'required' => false,
             ]);
-
-            if ($this->security->isGranted('ROLE_PRICE')) {
-                $builder
-                ->add('purchase_price', MoneyType::class, [
-                    'label' => 'Precio de Compra',
-                    'currency' => 'USD',
-                    'required' => false,
-                ])
-                ->add('suggested_retail_price', MoneyType::class, [
-                    'label' => 'Precio Venta (Sugerido)',
-                    'currency' => 'USD',
-                    'required' => false,
-                ])
-                ->add('purchasePriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
-                    'label' => 'Precio de Compra (USD)',
-                    'currency' => 'USD',
-                    'required' => false,
-                ])
-                ->add('suggestedRetailPriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
-                    'label' => 'Precio Venta (Sugerido, USD)',
-                    'currency' => 'USD',
-                    'required' => false,
-                ]);
-            }
+            
     }
 
     public function configureOptions(OptionsResolver $resolver): void

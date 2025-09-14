@@ -131,4 +131,23 @@ class VentasRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function getNonFinancedSalesValueByCurrency(): array
+    {
+        $results = $this->createQueryBuilder('v')
+            ->select('v.saleCurrency, SUM(v.final_sale_price) as total')
+            ->where("v.payment_method != 'Financiado'")
+            ->groupBy('v.saleCurrency')
+            ->getQuery()
+            ->getResult();
+
+        // Inicializamos los totales en 0 para asegurar que siempre existan
+        $totals = ['ARS' => 0, 'USD' => 0];
+        foreach ($results as $result) {
+            if (isset($totals[$result['saleCurrency']])) {
+                $totals[$result['saleCurrency']] = $result['total'];
+            }
+        }
+        return $totals;
+    }
 }

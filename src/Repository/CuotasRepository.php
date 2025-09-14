@@ -40,4 +40,45 @@ class CuotasRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    public function sumPaidInstallmentsByCurrency(): array
+    {
+        $results = $this->createQueryBuilder('c')
+            ->select('v.saleCurrency, SUM(c.amount) as total')
+            ->join('c.venta', 'v') // Unimos Cuotas con Ventas para saber la moneda
+            ->where('c.status = :status')
+            ->setParameter('status', 'Pagada')
+            ->groupBy('v.saleCurrency')
+            ->getQuery()
+            ->getResult();
+
+        $totals = ['ARS' => 0, 'USD' => 0];
+        foreach ($results as $result) {
+            if (isset($totals[$result['saleCurrency']])) {
+                $totals[$result['saleCurrency']] = $result['total'];
+            }
+        }
+        return $totals;
+    }
+
+    public function sumPendingInstallmentsByCurrency(): array
+    {
+        $results = $this->createQueryBuilder('c')
+            ->select('v.saleCurrency, SUM(c.amount) as total')
+            ->join('c.venta', 'v') // Unimos Cuotas con Ventas para saber la moneda
+            ->where('c.status = :status')
+            ->setParameter('status', 'Pendiente')
+            ->groupBy('v.saleCurrency')
+            ->getQuery()
+            ->getResult();
+
+        // Inicializamos los totales en 0 para asegurar que siempre existan
+        $totals = ['ARS' => 0, 'USD' => 0];
+        foreach ($results as $result) {
+            if (isset($totals[$result['saleCurrency']])) {
+                $totals[$result['saleCurrency']] = $result['total'];
+            }
+        }
+        return $totals;
+    }
 }

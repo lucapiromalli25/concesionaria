@@ -36,9 +36,7 @@
                                 <th>Patente</th>
                                 <th>Año</th>
                                 <th>Color</th>
-                                {% if is_granted("ROLE_PRICE") %}
-                                    <th>Precio Venta</th>
-                                {% endif %}
+                                <th>Precio Venta</th>
                                 <th>Observaciones</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acciones</th>
@@ -51,9 +49,7 @@
                                 <th>Patente</th>
                                 <th>Año</th>
                                 <th>Color</th>
-                                {% if is_granted("ROLE_PRICE") %}
-                                    <th>Precio Venta</th>
-                                {% endif %}
+                                <th>Precio Venta</th>
                                 <th>Observaciones</th>
                                 <th>Estado</th>
                                 <th class="text-end">Acciones</th>
@@ -70,9 +66,7 @@
                                 <td class="vehiculo-plate">{{ vehiculo.plateNumber }}</td>
                                 <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
                                 <td class="vehiculo-color">{{ vehiculo.color }}</td>
-                                {% if is_granted("ROLE_PRICE") %}
-                                    <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
-                                {% endif %}
+                                <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
                                 <td class="vehiculo-observations">{{ vehiculo.internalObservations }}</td>
                                 <td>
                                     {% if vehiculo.state == 'Vendido' %}<span class="badge bg-success">Vendido</span>

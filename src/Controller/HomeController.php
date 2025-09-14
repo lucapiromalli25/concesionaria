@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Repository\ReservasRepository;
+use App\Repository\CuotasRepository;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class HomeController extends AbstractController
@@ -16,7 +17,7 @@ class HomeController extends AbstractController
     #[Route('/home', name: 'app_home')]
     #[Route('/', name: 'app_root')]
     #[IsGranted('ROLE_USER')]
-    public function index(VehiculosRepository $vehiculosRepo, VentasRepository $ventasRepo, ReservasRepository $reservasRepo, HttpClientInterface $httpClient): Response
+    public function index(CuotasRepository $cuotasRepo, VehiculosRepository $vehiculosRepo, VentasRepository $ventasRepo, ReservasRepository $reservasRepo, HttpClientInterface $httpClient): Response
     {
         // --- KPIs Principales ---
         $totalVehiculos = $vehiculosRepo->countInStock();
@@ -24,6 +25,16 @@ class HomeController extends AbstractController
         $ventasMesActual = $ventasRepo->countSalesThisMonth();
         $valorTotalInventario = $vehiculosRepo->sumInventoryValue();
         $totalVendidoHistorico = $ventasRepo->getTotalSalesValue();
+
+        $ventasAlContado = $ventasRepo->getNonFinancedSalesValueByCurrency();
+        $cuotasPagadas = $cuotasRepo->sumPaidInstallmentsByCurrency();
+
+        $totalRecaudado = [
+            'ARS' => ($ventasAlContado['ARS'] ?? 0) + ($cuotasPagadas['ARS'] ?? 0),
+            'USD' => ($ventasAlContado['USD'] ?? 0) + ($cuotasPagadas['USD'] ?? 0),
+        ];
+
+        $deudaPendiente = $cuotasRepo->sumPendingInstallmentsByCurrency();
 
         // --- Gráfico 1: Tendencia de Ventas (últimos 15 días) ---
         $salesTrendData = $ventasRepo->getSalesTrend(15);
@@ -168,6 +179,8 @@ class HomeController extends AbstractController
             'ultimosIngresos' => $ultimosIngresos,
             'salespersonChartData' => $salespersonChartData,
             'dolarRates' => $dolarRates,
+            'totalRecaudado' => $totalRecaudado,
+            'deudaPendiente' => $deudaPendiente,
         ]);
     }
 }
