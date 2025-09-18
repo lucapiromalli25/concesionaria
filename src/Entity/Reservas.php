@@ -56,6 +56,9 @@ class Reservas
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $deleted_at = null;
 
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $reservationCurrency = 'ARS';
+
     public function getId(): ?int
     {
         return $this->id;
@@ -214,6 +217,17 @@ class Reservas
     {
         $this->deleted_at = $deleted_at;
 
+        return $this;
+    }
+
+    public function getReservationCurrency(): ?string
+    {
+        return $this->reservationCurrency;
+    }
+
+    public function setReservationCurrency(?string $reservationCurrency): static
+    {
+        $this->reservationCurrency = $reservationCurrency;
         return $this;
     }
 }

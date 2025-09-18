@@ -45,7 +45,7 @@ class VentaController extends AbstractController
 
         // Si el auto está reservado, pre-seleccionamos al cliente y el precio
         if ($reserva = $vehiculo->getReserva()) {
-            $venta->setCliente($reserva->getClient());
+            $venta->setCliente($reserva->getCliente());
             $venta->setFinalSalePrice($vehiculo->getSuggestedRetailPrice());
         }
 

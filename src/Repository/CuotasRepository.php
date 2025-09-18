@@ -45,8 +45,9 @@ class CuotasRepository extends ServiceEntityRepository
     {
         $results = $this->createQueryBuilder('c')
             ->select('v.saleCurrency, SUM(c.amount) as total')
-            ->join('c.venta', 'v') // Unimos Cuotas con Ventas para saber la moneda
+            ->join('c.venta', 'v')
             ->where('c.status = :status')
+            ->andWhere("v.payment_method = 'Financiado'") // <-- LÍNEA CLAVE AÑADIDA
             ->setParameter('status', 'Pagada')
             ->groupBy('v.saleCurrency')
             ->getQuery()

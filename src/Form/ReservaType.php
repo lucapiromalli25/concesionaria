@@ -30,9 +30,18 @@ class ReservaType extends AbstractType
                 'widget' => 'single_text',
                 'data' => new \DateTimeImmutable('now')
             ])
+            ->add('reservationCurrency', ChoiceType::class, [
+                'label' => 'Moneda de la Seña',
+                'choices' => [
+                    'Pesos (ARS)' => 'ARS',
+                    'Dólares (USD)' => 'USD',
+                ],
+                'attr' => ['class' => 'form-select']
+            ])
             ->add('reservationAmount', MoneyType::class, [
                 'label' => 'Monto de la Seña',
-                'currency' => 'USD'
+                'currency' => false, // La moneda se elige arriba
+                'attr' => ['placeholder' => 'Ej: 500']
             ])
             ->add('expirationDate', DateType::class, [
                 'label' => 'Fecha de Vencimiento',
