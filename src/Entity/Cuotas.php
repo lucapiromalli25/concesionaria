@@ -36,6 +36,12 @@ class Cuotas
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $paymentDate = null;
 
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $paidAmount = null; // Monto que realmente se pagó
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $paidCurrency = null; // Moneda en la que se pagó
+
     #[Vich\UploadableField(mapping: 'receipt_files', fileNameProperty: 'receiptName')]
     private ?File $receiptFile = null;
 
@@ -47,6 +53,7 @@ class Cuotas
 
     #[ORM\Column(length: 50, unique: true, nullable: true)]
     private ?string $receiptNumber = null;
+    
 
     public function getId(): ?int { return $this->id; }
     public function getVenta(): ?Ventas { return $this->venta; }
@@ -61,6 +68,11 @@ class Cuotas
     public function setStatus(string $status): static { $this->status = $status; return $this; }
     public function getPaymentDate(): ?\DateTimeInterface { return $this->paymentDate; }
     public function setPaymentDate(?\DateTimeInterface $paymentDate): static { $this->paymentDate = $paymentDate; return $this; }
+    public function getPaidAmount(): ?string { return $this->paidAmount; }
+    public function setPaidAmount(?string $paidAmount): static { $this->paidAmount = $paidAmount; return $this; }
+    public function getPaidCurrency(): ?string { return $this->paidCurrency; }
+    public function setPaidCurrency(?string $paidCurrency): static { $this->paidCurrency = $paidCurrency; return $this; }
+
     
     public function setReceiptFile(?File $receiptFile = null): void
     {

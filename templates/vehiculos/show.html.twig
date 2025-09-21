@@ -146,7 +146,9 @@
                         <tr>
                             <th># Cuota</th>
                             <th>Vencimiento</th>
-                            <th>Monto</th>
+                            <th>Monto Original</th>
+                            <th>Monto Pagado</th>
+                            <th>Moneda</th>
                             <th>Estado</th>
                             <th>Fecha de Pago</th>
                             <th class="text-end">Comprobante</th>
@@ -158,6 +160,8 @@
                             <td><strong>{{ cuota.installmentNumber }}</strong></td>
                             <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
                             <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
+                            <td>$ {{cuota.paidAmount ? cuota.paidAmount|number_format(2, ',', '.') : '0,00' }}</td>
+                            <td>{{ cuota.paidCurrency ? cuota.paidCurrency : '-'}}</td>
                             <td>
                                 {% if cuota.status == 'Pagada' %}
                                     <span class="badge bg-success">Pagada</span>

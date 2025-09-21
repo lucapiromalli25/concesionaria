@@ -11,10 +11,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Vich\UploaderBundle\Storage\StorageInterface; // <-- AÑADE ESTE IMPORT
+use Vich\UploaderBundle\Storage\StorageInterface;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-
 
 #[Route('/cuotas')]
 #[IsGranted('ROLE_USER')]
@@ -28,16 +27,28 @@ class CuotaController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $cuota->setStatus('Pagada');
-            $entityManager->flush(); 
 
+            // --- LÓGICA DE PAGO MEJORADA ---
+            // Si el vendedor no especificó un monto, asumimos el pago completo de la cuota.
+            if ($cuota->getPaidAmount() === null || $cuota->getPaidAmount() == 0) {
+                $cuota->setPaidAmount($cuota->getAmount());
+            }
+            // Si no especificó una moneda, asumimos la moneda original de la venta.
+            if ($cuota->getPaidCurrency() === null) {
+                $cuota->setPaidCurrency($cuota->getVenta()->getSaleCurrency());
+            }
+
+            $entityManager->flush(); // Guardamos los datos del pago.
+
+            // Generamos el número de recibo único después de guardar.
             $receiptNumber = 'RC-' . str_pad($cuota->getVenta()->getId(), 4, '0', STR_PAD_LEFT) . '-' . str_pad($cuota->getId(), 5, '0', STR_PAD_LEFT);
             $cuota->setReceiptNumber($receiptNumber);
-            $entityManager->flush();
+            $entityManager->flush(); // Volvemos a guardar para persistir el número de recibo.
 
             if ($request->isXmlHttpRequest()) {
-                // Obtenemos la URL del COMPROBANTE (archivo subido)
+                // Obtenemos la URL del COMPROBANTE (archivo subido por el cliente)
                 $comprobanteUrl = $cuota->getReceiptName() ? $storage->resolveUri($cuota, 'receiptFile') : null;
-                // Generamos la URL para el RECIBO (PDF del sistema)
+                // Generamos la URL para el RECIBO (PDF que genera nuestro sistema)
                 $reciboPdfUrl = $this->generateUrl('app_cuotas_receipt', ['id' => $cuota->getId()]);
 
                 return new JsonResponse([
@@ -47,8 +58,8 @@ class CuotaController extends AbstractController
                         'id' => $cuota->getId(),
                         'status' => $cuota->getStatus(),
                         'paymentDate' => $cuota->getPaymentDate()->format('d/m/Y H:i'),
-                        'comprobanteUrl' => $comprobanteUrl, // <-- URL del archivo subido
-                        'reciboUrl' => $reciboPdfUrl       // <-- URL del PDF generado
+                        'comprobanteUrl' => $comprobanteUrl,
+                        'reciboUrl' => $reciboPdfUrl,
                     ]
                 ]);
             }
@@ -70,7 +81,9 @@ class CuotaController extends AbstractController
         $pdfOptions->set('defaultFont', 'Arial');
         $dompdf = new Dompdf($pdfOptions);
 
+        // Pasamos la cuota a la misma plantilla, que ahora es más inteligente
         $html = $this->renderView('receipt/receipt_template.html.twig', ['cuota' => $cuota]);
+        
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();

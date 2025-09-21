@@ -2,6 +2,8 @@
 {{ form_start(form, {'action': form_action, 'attr': {'id': 'formPayment', 'enctype': 'multipart/form-data'}}) }}
     
     {{ form_row(form.paymentDate) }}
+    {{ form_row(form.paidAmount) }}
+    {{ form_row(form.paidCurrency) }}
     {{ form_row(form.receiptFile) }}
 
     <div class="modal-footer">
