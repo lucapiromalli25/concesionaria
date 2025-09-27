@@ -93,4 +93,36 @@ class CuotaController extends AbstractController
 
         return new Response('', 200, ['Content-Type' => 'application/pdf']);
     }
+
+    #[Route('/{id}/cancel-payment', name: 'app_cuotas_cancel_payment', methods: ['POST'])]
+    public function cancelPayment(Request $request, Cuotas $cuota, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $submittedToken = $request->request->get('token');
+
+        // Verificamos el token CSRF para proteger contra ataques
+        if ($this->isCsrfTokenValid('cancel-payment'.$cuota->getId(), $submittedToken)) {
+            
+            // Revertimos el estado de la cuota
+            $cuota->setStatus('Pendiente');
+            
+            // Limpiamos todos los campos relacionados con el pago
+            $cuota->setPaymentDate(null);
+            $cuota->setPaidAmount(null);
+            $cuota->setPaidCurrency(null);
+            $cuota->setReceiptNumber(null);
+            
+            // Importante: Esto le dirá a VichUploaderBundle que elimine el archivo del comprobante
+            $cuota->setReceiptFile(null); 
+            $cuota->setReceiptName(null);
+
+            // Actualizamos la fecha de modificación
+            $cuota->setUpdatedAt(new \DateTimeImmutable());
+
+            $entityManager->flush();
+
+            return new JsonResponse(['status' => 'success', 'message' => 'El pago ha sido cancelado correctamente.']);
+        }
+
+        return new JsonResponse(['status' => 'error', 'message' => 'Token de seguridad inválido.'], 400);
+    }
 }

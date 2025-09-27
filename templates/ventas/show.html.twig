@@ -97,6 +97,10 @@
                                     <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
                                         Registrar Pago
                                     </button>
+                                {% else %}
+                                    <button class="btn btn-danger btn-sm btn-cancel-payment" data-cuota-id="{{ cuota.id }}" data-token="{{ csrf_token('cancel-payment' ~ cuota.id) }}">
+                                        Cancelar Pago
+                                    </button>
                                 {% endif %}
                                 {% if cuota.receiptName %}
                                     <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido">
@@ -145,32 +149,115 @@
     </div>
   </div>
 </div>
+
+
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirmar Acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="confirmationModalBody">
+        ¿Estás seguro de que deseas realizar esta acción?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        // --- INICIALIZACIÓN DE MODALES ---
+        const paymentModalEl = document.getElementById('paymentModal');
+        const paymentModal = paymentModalEl ? new bootstrap.Modal(paymentModalEl) : null;
         const paymentModalBody = document.getElementById('payment-modal-body-content');
         const paymentModalTitle = document.getElementById('paymentModalLabel');
+        
+        const modifyPlanModalEl = document.getElementById('modifyPlanModal');
+        const modifyPlanModal = modifyPlanModalEl ? new bootstrap.Modal(modifyPlanModalEl) : null;
+        const modifyPlanModalBody = document.getElementById('modify-plan-modal-body');
+
+        const confirmationModalEl = document.getElementById('confirmationModal');
+        const confirmationModal = confirmationModalEl ? new bootstrap.Modal(confirmationModalEl) : null;
+        const confirmActionBtn = document.getElementById('confirmActionBtn');
+        const confirmationModalBody = document.getElementById('confirmationModalBody');
+        
         const tablaBody = document.querySelector('tbody');
 
-        tablaBody.addEventListener('click', function(e) {
-            const button = e.target.closest('.btn-register-payment');
-            if (button) {
-                const cuotaId = button.dataset.cuotaId;
-                paymentModalTitle.textContent = `Registrar Pago de Cuota #${cuotaId}`;
-                const url = `{{ path('app_cuotas_register_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
-                
-                fetch(url).then(r => r.text()).then(html => {
-                    paymentModalBody.innerHTML = html;
-                    paymentModal.show();
-                    attachPaymentFormSubmitListener();
-                });
-            }
-        });
+        // --- MANEJO DE CLICS EN LA TABLA ---
+        if (tablaBody) {
+            tablaBody.addEventListener('click', function(e) {
+                const registerButton = e.target.closest('.btn-register-payment');
+                const cancelButton = e.target.closest('.btn-cancel-payment');
 
+                // --- LÓGICA PARA REGISTRAR PAGO ---
+                if (registerButton) {
+                    const cuotaId = registerButton.dataset.cuotaId;
+                    paymentModalTitle.textContent = `Registrar Pago de Cuota #${cuotaId}`;
+                    const url = `{{ path('app_cuotas_register_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
+                    
+                    fetch(url).then(r => r.text()).then(html => {
+                        paymentModalBody.innerHTML = html;
+                        paymentModal.show();
+                        attachPaymentFormSubmitListener();
+                    });
+                }
+
+                // --- LÓGICA PARA CANCELAR PAGO (CON MODAL BOOTSTRAP) ---
+                if (cancelButton) {
+                    e.preventDefault();
+                    const cuotaId = cancelButton.dataset.cuotaId;
+                    const token = cancelButton.dataset.token;
+                    const url = `{{ path('app_cuotas_cancel_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
+
+                    confirmationModalBody.textContent = "Esta acción anulará el pago. La cuota volverá a estar pendiente y el comprobante se eliminará. ¡No podrás revertir esto!";
+                    confirmActionBtn.dataset.url = url;
+                    confirmActionBtn.dataset.token = token;
+                    
+                    confirmationModal.show();
+                }
+            });
+        }
+
+        // --- EVENTO PARA EL BOTÓN DE CONFIRMACIÓN DEL MODAL ---
+        if (confirmActionBtn) {
+            confirmActionBtn.addEventListener('click', function() {
+                const url = this.dataset.url;
+                const token = this.dataset.token;
+
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Eliminando...';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new URLSearchParams({ 'token': token })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    confirmationModal.hide();
+                    if (data.status === 'success') {
+                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                        setTimeout(() => { window.location.reload(); }, 1000);
+                    } else {
+                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message},{type: 'danger'});
+                    }
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = 'Confirmar';
+                });
+            });
+        }
+
+        // --- SUBMIT DEL FORMULARIO DE PAGO ---
         function attachPaymentFormSubmitListener() {
             const form = document.getElementById('formPayment');
             if (!form) return;
@@ -186,14 +273,9 @@
                     if (data.status === 'success') {
                         paymentModal.hide();
                         $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        
-                        // Descarga automática del RECIBO PDF
                         window.open(data.cuota.reciboUrl, '_blank');
-                        
-                        // Recargamos la página después de un breve momento para que el usuario vea el cambio
                         setTimeout(() => { window.location.reload(); }, 500);
                     } else {
-                        // Aquí podrías manejar errores de validación si los hubiera
                         $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
                     }
                 })
@@ -205,18 +287,18 @@
         }
         
         // --- LÓGICA PARA MODIFICAR PLAN DE PAGOS ---
-        const modifyPlanModal = new bootstrap.Modal(document.getElementById('modifyPlanModal'));
-        const modifyPlanModalBody = document.getElementById('modify-plan-modal-body');
         const btnModificarPlan = document.getElementById('btn-modificar-plan');
-
         if (btnModificarPlan) {
             btnModificarPlan.addEventListener('click', function() {
                 const url = '{{ path('app_plan_de_pagos_modificar', {'id': venta.id}) }}';
                 fetch(url)
                     .then(r => r.text()).then(html => {
-                        modifyPlanModalBody.innerHTML = html;
-                        modifyPlanModal.show();
-                        // No necesitamos un listener AJAX aquí, el formulario se enviará de forma tradicional
+                        if (modifyPlanModalBody) {
+                            modifyPlanModalBody.innerHTML = html;
+                        }
+                        if (modifyPlanModal) {
+                            modifyPlanModal.show();
+                        }
                     });
             });
         }

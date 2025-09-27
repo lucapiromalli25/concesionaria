@@ -59,6 +59,9 @@ class Reservas
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $reservationCurrency = 'ARS';
 
+    #[ORM\Column(length: 50, unique: true, nullable: true)]
+    private ?string $receiptNumber = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -228,6 +231,18 @@ class Reservas
     public function setReservationCurrency(?string $reservationCurrency): static
     {
         $this->reservationCurrency = $reservationCurrency;
+        return $this;
+    }
+
+    public function getReceiptNumber(): ?string
+    {
+        return $this->receiptNumber;
+    }
+
+    public function setReceiptNumber(?string $receiptNumber): static
+    {
+        $this->receiptNumber = $receiptNumber;
+
         return $this;
     }
 }

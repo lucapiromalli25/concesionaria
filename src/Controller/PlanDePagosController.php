@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/plan-de-pagos')]
-#[IsGranted("is_granted('ROLE_MANAGER') or is_granted('ROLE_ADMIN') or is_granted('ROLE_PRICE')")] // Solo los gerentes pueden modificar planes
+#[IsGranted("is_granted('ROLE_MANAGER') or is_granted('ROLE_ADMIN') or is_granted('ROLE_PRICE')")]
 class PlanDePagosController extends AbstractController
 {
     #[Route('/{id}/modificar', name: 'app_plan_de_pagos_modificar', methods: ['GET', 'POST'])]
