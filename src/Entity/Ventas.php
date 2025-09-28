@@ -71,6 +71,7 @@ class Ventas
     #[ORM\Column(length: 50, unique: true, nullable: true)]
     private ?string $receiptNumber = null;
 
+
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $saleCurrency = 'ARS';
     public function __construct()

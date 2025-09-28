@@ -15,6 +15,8 @@ use App\Repository\VentasRepository;
 use App\Entity\Cuotas;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Symfony\Component\HttpFoundation\JsonResponse;
+
 
 #[Route('/ventas')]
 #[IsGranted('ROLE_SALESPERSON')]
@@ -144,5 +146,36 @@ class VentaController extends AbstractController
         $dompdf->stream($filename, ["Attachment" => true]); // true para forzar la descarga
 
         return new Response('', 200, ['Content-Type' => 'application/pdf']);
+    }
+
+    #[Route('/{id}/delete', name: 'app_ventas_delete', methods: ['POST'])]
+    public function delete(Request $request, Ventas $venta, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Regla de negocio: No se puede eliminar una venta que ya tiene pagos registrados.
+        if ($venta->hasPayments()) {
+            return new JsonResponse([
+                'status' => 'error', 
+                'message' => 'No se puede eliminar una venta que ya tiene pagos registrados.'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Verificamos el token de seguridad
+        $submittedToken = $request->request->get('token');
+        if ($this->isCsrfTokenValid('delete'.$venta->getId(), $submittedToken)) {
+            
+            // 1. Devolver el vehículo al stock
+            $vehiculo = $venta->getVehiculo();
+            if ($vehiculo) {
+                $vehiculo->setState('En Stock');
+            }
+
+            // 2. Eliminar la venta (y sus cuotas en cascada)
+            $entityManager->remove($venta);
+            $entityManager->flush();
+
+            return new JsonResponse(['status' => 'success', 'message' => 'La venta ha sido eliminada y el vehículo ha vuelto al stock.']);
+        }
+
+        return new JsonResponse(['status' => 'error', 'message' => 'Token de seguridad inválido.'], Response::HTTP_BAD_REQUEST);
     }
 }

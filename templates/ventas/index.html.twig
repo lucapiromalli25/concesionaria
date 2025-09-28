@@ -52,6 +52,13 @@
                                 <td class="text-end fw-bold text-success">${{ venta.finalSalePrice|number_format(2, ',', '.') }}</td>
                                 <td class="text-end">
                                     <a href="{{ path('app_ventas_show', {'id': venta.id}) }}" class="btn btn-info btn-sm">Ver Detalles</a>
+                                    {% if not venta.hasPayments() and is_granted('ROLE_PRICE') %}
+                                        <button class="btn btn-danger btn-sm btn-delete-sale" 
+                                                data-venta-id="{{ venta.id }}" 
+                                                data-token="{{ csrf_token('delete' ~ venta.id) }}">
+                                            Eliminar
+                                        </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% else %}
@@ -66,6 +73,20 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Confirmar Eliminación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">¿Estás seguro de que deseas eliminar esta venta? El vehículo asociado volverá a estar "En Stock". Esta acción no se puede deshacer.</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block javascripts %}
@@ -79,6 +100,53 @@
                 },
                 "order": [[ 1, "desc" ]] // Ordenar por fecha (segunda columna)
             });
+
+            const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            const confirmActionBtn = document.getElementById('confirmActionBtn');
+
+            // --- LÓGICA PARA ELIMINAR UNA VENTA ---
+            $('#tabla-ventas tbody').on('click', '.btn-delete-sale', function () {
+                const ventaId = $(this).data('venta-id');
+                const token = $(this).data('token');
+                const url = `{{ path('app_ventas_delete', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', ventaId);
+
+                // Guardamos los datos en el botón de confirmación del modal
+                confirmActionBtn.dataset.url = url;
+                confirmActionBtn.dataset.token = token;
+                
+                confirmationModal.show();
+            });
+
+            confirmActionBtn.addEventListener('click', function() {
+                const url = this.dataset.url;
+                const token = this.dataset.token;
+                
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Eliminando...';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new URLSearchParams({ 'token': token })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    confirmationModal.hide();
+                    if (data.status === 'success') {
+                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
+                        // Recargamos la página para que se actualice la tabla y el stock
+                        setTimeout(() => { window.location.reload(); }, 1500);
+                    } else {
+                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message},{type: 'danger'});
+                    }
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = 'Sí, Eliminar';
+                });
+            });
         });
+
+        
     </script>
 {% endblock %}
