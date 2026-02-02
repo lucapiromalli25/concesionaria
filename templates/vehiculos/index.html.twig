@@ -79,6 +79,14 @@
                                         <ul class="dropdown-menu">
                                             <li><a class="dropdown-item" href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}">Ver Detalles</a></li>
                                             <li><button class="dropdown-item btn-editar">Editar</button></li>
+                                            {% if vehiculo.state == 'Reservado' and vehiculo.reserva is not null %}
+                                                <hr class="dropdown-divider">
+                                                <li>
+                                                    <a class="dropdown-item text-primary" href="{{ path('app_reservas_view_pdf', {'id': vehiculo.reserva.id}) }}" target="_blank">
+                                                        <i class="fas fa-file-pdf me-1"></i> Ver Recibo Reserva
+                                                    </a>
+                                                </li>
+                                            {% endif %}
                                             {% if vehiculo.state in ['En Stock', 'Reservado'] %}<hr class="dropdown-divider">{% endif %}
                                             {% if vehiculo.state == 'En Stock' %}<li><a class="dropdown-item" href="{{ path('app_reservas_new', {'id': vehiculo.id}) }}">Reservar</a></li>{% endif %}
                                             {% if vehiculo.state in ['En Stock', 'Reservado'] %}<li><a class="dropdown-item" href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}">Vender</a></li>{% endif %}

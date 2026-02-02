@@ -86,8 +86,6 @@ class VehiculosController extends AbstractController
     #[Route('/{id}', name: 'app_vehiculos_show', methods: ['GET'])]
     public function show(Vehiculos $vehiculo): Response
     {
-        // Gracias al ParamConverter de Symfony, ya tenemos el objeto Vehiculo
-        // correcto a partir del {id} de la URL. Solo tenemos que renderizar la vista.
         return $this->render('vehiculos/show.html.twig', [
             'vehiculo' => $vehiculo,
         ]);

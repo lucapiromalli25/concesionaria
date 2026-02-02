@@ -14,6 +14,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 #[Route('/reservas')]
 #[IsGranted('ROLE_SALESPERSON')]
@@ -53,6 +56,8 @@ class ReservaController extends AbstractController
             $reserva->setReceiptNumber('RR-' . str_pad($reserva->getId(), 6, '0', STR_PAD_LEFT));
             $entityManager->flush();
 
+            $this->saveReceiptAsPdf($reserva);
+
             $this->addFlash('success', '¡Reserva registrada con éxito!');
             return $this->redirectToRoute('app_reservas_success', ['id' => $reserva->getId()]);
         }
@@ -90,5 +95,59 @@ class ReservaController extends AbstractController
         $dompdf->stream($filename, ["Attachment" => true]);
 
         return new Response('', 200, ['Content-Type' => 'application/pdf']);
+    }
+
+    #[Route('/{id}/view-receipt', name: 'app_reservas_view_pdf', methods: ['GET'])]
+    public function viewStoredPdf(Reservas $reserva): Response
+    {
+        $filename = 'comprobante_reserva_' . $reserva->getReceiptNumber() . '.pdf';
+        $directory = $this->getParameter('reservations_directory'); 
+        $filepath = $directory . '/' . $filename;
+
+        if (!file_exists($filepath)) {
+            // Opción A: Si no existe el archivo, podrías redirigir a la generación dinámica
+            return $this->redirectToRoute('app_reservas_receipt', ['id' => $reserva->getId()]);
+            
+            // Opción B: Mostrar un error
+            //throw $this->createNotFoundException('El archivo del recibo no se encuentra en el servidor.');
+        }
+
+        $response = new BinaryFileResponse($filepath);
+        
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_INLINE,
+            $filename
+        );
+
+        return $response;
+    }
+
+    private function saveReceiptAsPdf(Reservas $reserva): void
+    {
+        $pdfOptions = new Options();
+        $pdfOptions->set('defaultFont', 'Arial');
+        $dompdf = new Dompdf($pdfOptions);
+
+        $html = $this->renderView('receipt/reserva_receipt_template.html.twig', [
+            'reserva' => $reserva,
+        ]);
+        
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $output = $dompdf->output();
+
+        $directory = $this->getParameter('reservations_directory');
+        $filesystem = new Filesystem();
+        
+        if (!$filesystem->exists($directory)) {
+            $filesystem->mkdir($directory, 0777);
+        }
+
+        $filename = 'comprobante_reserva_' . $reserva->getReceiptNumber() . '.pdf';
+        $filepath = $directory . '/' . $filename;
+
+        file_put_contents($filepath, $output);
     }
 }
