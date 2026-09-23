@@ -3,6 +3,13 @@ framework:
         # The paths to make available to the asset mapper.
         paths:
             - assets/
+        # El theme viejo (KaiAdmin) tiene su copia servida desde public/assets y
+        # referencias a fuentes que no existen: se excluye del asset mapper.
+        excluded_patterns:
+            - '*/assets/css/*'
+            - '*/assets/js/*'
+            - '*/assets/fonts/*'
+            - '*/assets/img/*'
         missing_import_mode: strict
 
 when@prod:

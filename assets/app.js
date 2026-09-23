@@ -1,10 +1,11 @@
 import './bootstrap.js';
-/*
- * Welcome to your app's main JavaScript file!
- *
- * This file will be included onto the page via the importmap() Twig function,
- * which should already be in your base.html.twig.
- */
 import './styles/app.css';
+import { session } from '@hotwired/turbo';
 
-console.log('This log comes from assets/app.js - welcome to AssetMapper! 🎉');
+/*
+ * Turbo Drive queda desactivado mientras convivan el diseño nuevo (Tailwind)
+ * y las pantallas viejas (KaiAdmin + jQuery): asi cada navegacion entre
+ * secciones es una carga normal y los plugins viejos no se re-inicializan.
+ * Los <turbo-frame> siguen funcionando (listado de inventario).
+ */
+session.drive = false;

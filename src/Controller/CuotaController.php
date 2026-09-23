@@ -16,10 +16,10 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 
 #[Route('/cuotas')]
-#[IsGranted('ROLE_USER')]
 class CuotaController extends AbstractController
 {
     #[Route('/{id}/register-payment', name: 'app_cuotas_register_payment', methods: ['GET', 'POST'])]
+    #[IsGranted('cuotas.registrar_pago')]
     public function registerPayment(Request $request, Cuotas $cuota, EntityManagerInterface $entityManager, StorageInterface $storage): Response
     {
         $form = $this->createForm(CuotaPaymentType::class, $cuota);
@@ -75,6 +75,7 @@ class CuotaController extends AbstractController
     }
 
     #[Route('/{id}/receipt', name: 'app_cuotas_receipt')]
+    #[IsGranted('cuotas.ver_comprobante')]
     public function receipt(Cuotas $cuota): Response
     {
         $pdfOptions = new Options();
@@ -95,6 +96,7 @@ class CuotaController extends AbstractController
     }
 
     #[Route('/{id}/cancel-payment', name: 'app_cuotas_cancel_payment', methods: ['POST'])]
+    #[IsGranted('cuotas.anular_pago')]
     public function cancelPayment(Request $request, Cuotas $cuota, EntityManagerInterface $entityManager): JsonResponse
     {
         $submittedToken = $request->request->get('token');

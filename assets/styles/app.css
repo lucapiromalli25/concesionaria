@@ -1,3 +1,240 @@
-body {
-    background-color: skyblue;
+@import "tailwindcss";
+
+/* Modo oscuro por clase en <html>, controlado desde theme_controller.js */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   PALETA
+   Grafito calido + cobre. El cobre se usa solo en acciones primarias y en el
+   item activo del menu; el resto del sistema es neutro para que los unicos
+   colores saturados de una tabla sean los estados del vehiculo.
+   Estados: verde = en stock, celeste = reservado, gris = vendido, rojo = error.
+--------------------------------------------------------------------------- */
+:root {
+    --app-bg:        oklch(0.978 0.003 70);
+    --app-surface:   oklch(1 0 0);
+    --app-surface-2: oklch(0.962 0.004 70);
+    --app-line:      oklch(0.906 0.005 70);
+    --app-line-soft: oklch(0.945 0.004 70);
+    --app-fg:        oklch(0.22 0.008 70);
+    --app-fg-muted:  oklch(0.53 0.012 70);
+    --app-fg-subtle: oklch(0.68 0.014 70);
+
+    --app-accent:      oklch(0.545 0.145 52);
+    --app-accent-hover:oklch(0.485 0.14 52);
+    --app-accent-fg:   oklch(1 0 0);
+    --app-accent-soft: oklch(0.955 0.028 65);
+    --app-accent-text: oklch(0.5 0.15 52);
+
+    --app-plate:     oklch(0.42 0.17 265);
+    --app-shadow:    0 1px 2px 0 rgb(28 25 23 / 0.05), 0 1px 3px 0 rgb(28 25 23 / 0.05);
 }
+
+.dark {
+    --app-bg:        oklch(0.165 0.005 70);
+    --app-surface:   oklch(0.212 0.006 70);
+    --app-surface-2: oklch(0.258 0.007 70);
+    --app-line:      oklch(0.305 0.008 70);
+    --app-line-soft: oklch(0.26 0.007 70);
+    --app-fg:        oklch(0.955 0.004 70);
+    --app-fg-muted:  oklch(0.71 0.012 70);
+    --app-fg-subtle: oklch(0.56 0.014 70);
+
+    --app-accent:      oklch(0.66 0.145 55);
+    --app-accent-hover:oklch(0.72 0.135 57);
+    --app-accent-fg:   oklch(0.16 0.02 60);
+    --app-accent-soft: oklch(0.3 0.05 55);
+    --app-accent-text: oklch(0.76 0.13 60);
+
+    --app-plate:     oklch(0.68 0.15 265);
+    --app-shadow:    0 1px 3px 0 rgb(0 0 0 / 0.45);
+}
+
+@theme inline {
+    /* Una sola familia en toda la app (la del menu). Los numeros se alinean con
+       tabular-nums, sin cambiar de tipografia. */
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: var(--font-sans);
+
+    --color-app:          var(--app-bg);
+    --color-surface:      var(--app-surface);
+    --color-surface-2:    var(--app-surface-2);
+    --color-line:         var(--app-line);
+    --color-line-soft:    var(--app-line-soft);
+    --color-fg:           var(--app-fg);
+    --color-muted:        var(--app-fg-muted);
+    --color-subtle:       var(--app-fg-subtle);
+    --color-accent:       var(--app-accent);
+    --color-accent-hover: var(--app-accent-hover);
+    --color-accent-fg:    var(--app-accent-fg);
+    --color-accent-soft:  var(--app-accent-soft);
+    --color-accent-text:  var(--app-accent-text);
+}
+
+@layer base {
+    html { color-scheme: light; }
+    html.dark { color-scheme: dark; }
+
+    body { @apply bg-app text-fg antialiased; }
+
+    ::selection { background-color: var(--app-accent-soft); }
+
+    .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.6); }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* El preflight de Tailwind pone margin:0 en todo y eso pisa el `margin:auto`
+       con el que el navegador centra un <dialog> abierto con showModal(): sin
+       esto quedan pegados arriba a la izquierda. Va en @layer base a proposito,
+       para que cualquier utilidad max-w-* del template siga ganando. */
+    dialog:modal {
+        margin: auto;
+        max-width: calc(100vw - 2rem);
+        max-height: calc(100dvh - 2rem);
+        color: var(--app-fg);
+    }
+
+    dialog::backdrop {
+        background-color: rgb(28 25 23 / 0.5);
+        backdrop-filter: blur(2px);
+    }
+}
+
+@layer components {
+    .card {
+        background-color: var(--app-surface);
+        border: 1px solid var(--app-line);
+        box-shadow: var(--app-shadow);
+        @apply rounded-xl;
+    }
+
+    .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium
+               transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent
+               focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+        --tw-ring-offset-color: var(--app-bg);
+    }
+    .btn             { color: var(--app-fg); }
+    .btn-primary     { background-color: var(--app-accent); color: var(--app-accent-fg); }
+    .btn-primary:hover { background-color: var(--app-accent-hover); }
+    .btn-secondary   { background-color: var(--app-surface); color: var(--app-fg); border: 1px solid var(--app-line); }
+    .btn-secondary:hover { background-color: var(--app-surface-2); }
+    .btn-ghost       { color: var(--app-fg-muted); }
+    .btn-ghost:hover { background-color: var(--app-surface-2); color: var(--app-fg); }
+    .btn-danger      { @apply bg-red-600 text-white hover:bg-red-700; }
+    .btn-sm          { @apply px-2.5 py-1.5 text-xs; }
+    .btn-icon        { @apply px-2 py-2; }
+
+    .label { color: var(--app-fg); @apply block text-sm font-medium mb-1.5; }
+    .hint  { color: var(--app-fg-muted); @apply text-xs; }
+
+    .input {
+        background-color: var(--app-surface);
+        border: 1px solid var(--app-line);
+        color: var(--app-fg);
+        @apply block w-full rounded-lg px-3 py-2 text-sm transition-colors;
+    }
+    .input::placeholder { color: var(--app-fg-subtle); }
+    .input:focus {
+        outline: none;
+        border-color: var(--app-accent);
+        box-shadow: 0 0 0 1px var(--app-accent);
+    }
+    .input:disabled { background-color: var(--app-surface-2); color: var(--app-fg-subtle); }
+    select.input { @apply pr-8; }
+    textarea.input { @apply min-h-20; }
+
+    /* Patente: el identificador con el que trabaja la concesionaria todos los
+       dias, con la franja azul del Mercosur como marca de agua del dominio. */
+    .plate {
+        background-color: var(--app-surface);
+        border: 1px solid var(--app-line);
+        border-left: 3px solid var(--app-plate);
+        color: var(--app-fg);
+        @apply inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] tabular-nums;
+    }
+    .plate-lg { @apply px-2.5 py-1 text-base tracking-[0.14em]; border-left-width: 5px; }
+
+    .mono { @apply tabular-nums; }
+
+    /* Etiqueta de moneda: mismo tamaño que el importe, distinta jerarquia. */
+    .currency-tag {
+        background-color: var(--app-surface-2);
+        color: var(--app-fg-muted);
+        @apply inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide;
+    }
+
+    .badge, .badge-green, .badge-sky, .badge-slate, .badge-red, .badge-accent, .badge-amber {
+        @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset
+               whitespace-nowrap;
+    }
+    .badge       { @apply bg-stone-100 text-stone-600 ring-stone-500/20 dark:bg-white/10 dark:text-stone-300 dark:ring-white/15; }
+    .badge-green { @apply bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/25; }
+    .badge-sky   { @apply bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-500/15 dark:text-sky-300 dark:ring-sky-400/25; }
+    .badge-amber { @apply bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-400/25; }
+    .badge-slate { @apply bg-stone-100 text-stone-500 ring-stone-500/20 dark:bg-white/5 dark:text-stone-400 dark:ring-white/10; }
+    .badge-red   { @apply bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-400/25; }
+    .badge-accent{ background-color: var(--app-accent-soft); color: var(--app-accent-text); @apply ring-transparent; }
+
+    .table-wrap { @apply overflow-x-auto; }
+    .table { @apply w-full text-sm text-left border-collapse; }
+    .table thead th {
+        background-color: var(--app-surface-2);
+        color: var(--app-fg-muted);
+        border-bottom: 1px solid var(--app-line);
+        @apply sticky top-0 z-10 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap;
+    }
+    .table tbody td { border-bottom: 1px solid var(--app-line-soft); @apply px-4 py-2.5 align-middle; }
+    .table tbody tr { @apply transition-colors; }
+    .table tbody tr:hover { background-color: var(--app-surface-2); }
+    .table tbody tr:last-child td { border-bottom: 0; }
+
+    .nav-link, .nav-link-active {
+        @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors;
+    }
+    .nav-link { color: var(--app-fg-muted); }
+    .nav-link:hover { background-color: var(--app-surface-2); color: var(--app-fg); }
+    .nav-link-active { background-color: var(--app-accent); color: var(--app-accent-fg); }
+    .nav-section { color: var(--app-fg-subtle); @apply px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-wider; }
+
+    .section-title { color: var(--app-fg-muted); @apply text-[11px] font-semibold uppercase tracking-wider; }
+
+    .popover {
+        background-color: var(--app-surface);
+        border: 1px solid var(--app-line);
+        @apply rounded-lg shadow-lg;
+    }
+    .popover-item { color: var(--app-fg); @apply cursor-pointer px-3 py-2 text-sm transition-colors; }
+    .popover-item:hover, .popover-item[data-active="true"] { background-color: var(--app-surface-2); }
+
+    /* Ficha de datos: etiqueta arriba, valor abajo. Se repite en detalle de
+       vehiculo, venta y reserva. */
+    .field-label { color: var(--app-fg-subtle); @apply text-[11px] font-medium uppercase tracking-wider; }
+    .field-value { color: var(--app-fg); @apply mt-0.5 text-sm font-medium; }
+
+    /* Dialogo. El fondo de la app y el de las cards casi no se distinguen en
+       modo claro, asi que la separacion la hace la sombra + un borde mas duro,
+       no el color. El ancho lo define cada pagina con una utilidad max-w-*. */
+    .modal {
+        background-color: var(--app-surface);
+        border: 1px solid var(--app-line);
+        box-shadow: 0 25px 50px -12px rgb(28 25 23 / 0.3), 0 0 0 1px rgb(28 25 23 / 0.04);
+        @apply w-full overflow-y-auto rounded-xl p-0;
+    }
+    .dark .modal {
+        border-color: var(--app-line);
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
+    }
+
+    /* Encabezado y pie del dialogo, iguales en todos. */
+    .modal-header { border-bottom: 1px solid var(--app-line); @apply px-5 py-4; }
+    .modal-footer {
+        border-top: 1px solid var(--app-line);
+        background-color: var(--app-surface-2);
+        @apply flex justify-end gap-2 px-5 py-3;
+    }
+}
+
+turbo-frame[busy] { @apply opacity-50 transition-opacity; }

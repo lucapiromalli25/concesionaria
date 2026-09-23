@@ -1,0 +1,17 @@
+{# Encabezado de tabla ordenable. Uso: {{ tbl.sortable('Precio', 'precio', sort, dir, 'app_vehiculos_index', 'right') }} #}
+{% macro sortable(label, key, sort, dir, route, align = 'left') %}
+    {% import 'partials/icons.html.twig' as icons %}
+    {% set active = sort == key %}
+    {% set nextDir = active and dir == 'DESC' ? 'ASC' : 'DESC' %}
+    <th class="{{ align == 'right' ? 'text-right' : '' }}">
+        <a href="{{ path(route, app.request.query.all|merge({'sort': key, 'dir': nextDir})) }}"
+           class="inline-flex items-center gap-1 hover:text-slate-900 {{ active ? 'text-brand-700' : '' }}">
+            <span>{{ label }}</span>
+            {% if active %}
+                {{ icons.icon(dir == 'ASC' ? 'chevron-up-down' : 'chevron-up-down', 'size-3') }}
+            {% else %}
+                {{ icons.icon('chevron-up-down', 'size-3 opacity-30') }}
+            {% endif %}
+        </a>
+    </th>
+{% endmacro %}

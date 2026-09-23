@@ -1,152 +1,200 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/format.html.twig' as fmt %}
+{% import 'partials/table.html.twig' as tbl %}
 
-{% block title %}Historial de Ventas{% endblock %}
-
-{% block body %}
-<div class="page-header">
-    <h3 class="fw-bold mb-3">Historial de Ventas</h3>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title">Todas las Operaciones</h4>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover" id="tabla-ventas">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Vehículo</th>
-                                <th>Patente</th>
-                                <th>Cliente</th>
-                                <th>Vendedor</th>
-                                <th>Estado de Deuda</th>
-                                <th class="text-end">Precio Final</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for venta in ventas %}
-                            <tr>
-                                <td>{{ venta.saleDate|date('d/m/Y') }}</td>
-                                <td>
-                                    <span class="fw-bold">{{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}</span><br>
-                                    <small>{{ venta.vehiculo.version.name }} ({{ venta.vehiculo.anio }})</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ venta.vehiculo.plateNumber|default('N/A') }}</span> {# <-- NUEVA CELDA #}
-                                </td>
-                                <td>{{ venta.cliente.firstName }} {{ venta.cliente.lastName }}</td>
-                                <td>{{ venta.vendedor.completeName }}</td>
-                                <td>
-                                    {% set debtStatus = venta.getDebtStatus() %}
-                                    {% if debtStatus == 'Con Deuda' %}
-                                        <span class="badge bg-danger">{{ debtStatus }}</span>
-                                    {% else %}
-                                        <span class="badge bg-success">{{ debtStatus }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end fw-bold text-success">${{ venta.finalSalePrice|number_format(2, ',', '.') }}</td>
-                                <td class="text-end">
-                                    <a href="{{ path('app_ventas_show', {'id': venta.id}) }}" class="btn btn-info btn-sm">Ver Detalles</a>
-                                    {% if not venta.hasPayments() and is_granted('ROLE_PRICE') %}
-                                        <button class="btn btn-danger btn-sm btn-delete-sale" 
-                                                data-venta-id="{{ venta.id }}" 
-                                                data-token="{{ csrf_token('delete' ~ venta.id) }}">
-                                            Eliminar
-                                        </button>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center">No se encontraron ventas</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Confirmar Eliminación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">¿Estás seguro de que deseas eliminar esta venta? El vehículo asociado volverá a estar "En Stock". Esta acción no se puede deshacer.</div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger" id="confirmActionBtn">Sí, Eliminar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
+{% block title %}Ventas - Atilio Automotores{% endblock %}
+{% block page_title %}Ventas{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">{{ total }} operacion{{ total == 1 ? '' : 'es' }}</p>
 {% endblock %}
 
-{% block javascripts %}
-    {{ parent() }}
-    <script>
-        $(document).ready(function() {
-            $('#tabla-ventas').DataTable({
-                "pageLength": 10,
-                "language": {
-                    "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-                },
-                "order": [[ 1, "desc" ]] // Ordenar por fecha (segunda columna)
-            });
+{% block page_actions %}
+    <a href="{{ path('app_vehiculos_index', {'estado': 'En Stock'}) }}" class="btn-primary btn-sm">
+        {{ icons.icon('plus', 'size-4') }}<span class="hidden sm:inline">Vender un vehiculo</span>
+    </a>
+{% endblock %}
 
-            const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-            const confirmActionBtn = document.getElementById('confirmActionBtn');
+{% block body %}
 
-            // --- LÓGICA PARA ELIMINAR UNA VENTA ---
-            $('#tabla-ventas tbody').on('click', '.btn-delete-sale', function () {
-                const ventaId = $(this).data('venta-id');
-                const token = $(this).data('token');
-                const url = `{{ path('app_ventas_delete', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', ventaId);
+    {# ---- Totales del resultado filtrado ---- #}
+    {% set hayFiltro = filters.q or filters.metodo or filters.moneda or filters.deuda or filters.desde or filters.hasta %}
+    <div class="mb-5 flex flex-wrap items-center gap-x-10 gap-y-4 rounded-xl border border-accent/20 px-5 py-4"
+         style="background: linear-gradient(to right, var(--app-accent-soft), transparent 65%)">
+        <div>
+            <p class="field-label">Facturado{% if hayFiltro %} en este filtro{% endif %}</p>
+            <div class="mt-1.5">{{ fmt.montos(totales, 'text-xl') }}</div>
+        </div>
+        <div>
+            <p class="field-label">Operaciones</p>
+            <p class="mt-1.5 text-xl font-semibold tabular-nums">{{ total }}</p>
+        </div>
+        {% if total > 0 and totales.ARS > 0 %}
+            <div>
+                <p class="field-label">Ticket promedio en pesos</p>
+                <p class="mt-1.5 text-xl font-semibold tabular-nums">$ {{ (totales.ARS / total)|round|number_format(0, ',', '.') }}</p>
+            </div>
+        {% endif %}
+        {% if hayFiltro %}
+            <a href="{{ path('app_ventas_index') }}" class="btn-secondary btn-sm ml-auto" data-turbo="false">Ver todas</a>
+        {% endif %}
+    </div>
 
-                // Guardamos los datos en el botón de confirmación del modal
-                confirmActionBtn.dataset.url = url;
-                confirmActionBtn.dataset.token = token;
-                
-                confirmationModal.show();
-            });
+    <turbo-frame id="ventas" data-turbo-action="advance" class="block">
+        <div class="card overflow-hidden">
 
-            confirmActionBtn.addEventListener('click', function() {
-                const url = this.dataset.url;
-                const token = this.dataset.token;
-                
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Eliminando...';
+            {# ---- Filtros ---- #}
+            <form method="get" action="{{ path('app_ventas_index') }}"
+                  data-controller="filter-form" data-action="input->filter-form#submit change->filter-form#submitNow"
+                  class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
+                <div class="relative min-w-64 flex-1">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
+                        {{ icons.icon('search', 'size-4') }}
+                    </span>
+                    <input type="search" name="q" value="{{ filters.q }}" autocomplete="off"
+                           placeholder="Buscar por cliente, DNI, patente, vehiculo o recibo" class="input pl-9">
+                </div>
 
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: new URLSearchParams({ 'token': token })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    confirmationModal.hide();
-                    if (data.status === 'success') {
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        // Recargamos la página para que se actualice la tabla y el stock
-                        setTimeout(() => { window.location.reload(); }, 1500);
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message},{type: 'danger'});
-                    }
-                })
-                .finally(() => {
-                    this.disabled = false;
-                    this.innerHTML = 'Sí, Eliminar';
-                });
-            });
-        });
+                <select name="metodo" class="input w-48">
+                    <option value="">Todas las formas de pago</option>
+                    {% for metodo in metodos %}
+                        <option value="{{ metodo }}" {{ filters.metodo == metodo ? 'selected' }}>{{ metodo }}</option>
+                    {% endfor %}
+                </select>
 
-        
-    </script>
+                <select name="moneda" class="input w-32">
+                    <option value="">Moneda</option>
+                    <option value="ARS" {{ filters.moneda == 'ARS' ? 'selected' }}>ARS</option>
+                    <option value="USD" {{ filters.moneda == 'USD' ? 'selected' }}>USD</option>
+                </select>
+
+                <select name="deuda" class="input w-44">
+                    <option value="">Toda la deuda</option>
+                    <option value="vencida" {{ filters.deuda == 'vencida' ? 'selected' }}>Con cuotas vencidas</option>
+                    <option value="con" {{ filters.deuda == 'con' ? 'selected' }}>Con saldo pendiente</option>
+                    <option value="sin" {{ filters.deuda == 'sin' ? 'selected' }}>Sin deuda</option>
+                </select>
+
+                <div class="flex items-end gap-1.5">
+                    <input type="date" name="desde" value="{{ filters.desde }}" class="input w-36" title="Desde">
+                    <span class="pb-2 text-subtle">-</span>
+                    <input type="date" name="hasta" value="{{ filters.hasta }}" class="input w-36" title="Hasta">
+                </div>
+
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <noscript><button type="submit" class="btn-primary">Filtrar</button></noscript>
+
+                {% if filters.q or filters.metodo or filters.moneda or filters.deuda or filters.desde or filters.hasta %}
+                    <a href="{{ path('app_ventas_index') }}" class="btn-ghost btn-sm">{{ icons.icon('x', 'size-4') }} Limpiar</a>
+                {% endif %}
+            </form>
+
+            {# ---- Tabla ---- #}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            {{ tbl.sortable('Recibo', 'recibo', sort, dir, 'app_ventas_index') }}
+                            {{ tbl.sortable('Fecha', 'fecha', sort, dir, 'app_ventas_index') }}
+                            <th>Vehiculo</th>
+                            {{ tbl.sortable('Cliente', 'cliente', sort, dir, 'app_ventas_index') }}
+                            <th>Vendedor</th>
+                            <th>Pago</th>
+                            <th>Deuda</th>
+                            {{ tbl.sortable('Precio', 'precio', sort, dir, 'app_ventas_index', 'right') }}
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for venta in ventas %}
+                        <tr>
+                            <td class="text-xs text-muted">{{ venta.receiptNumber|default('-') }}</td>
+                            <td class="mono">{{ venta.saleDate ? venta.saleDate|date('d/m/Y') : '-' }}</td>
+                            <td>
+                                <a href="{{ path('app_vehiculos_show', {'id': venta.vehiculo.id}) }}" class="font-medium hover:text-accent-text">
+                                    {{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}
+                                </a>
+                                {% if venta.vehiculo.plateNumber %}
+                                    <div class="mt-0.5"><span class="plate">{{ venta.vehiculo.plateNumber }}</span></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <p class="font-medium">{{ venta.cliente.firstName }} {{ venta.cliente.lastName }}</p>
+                                <p class="mono text-xs text-subtle">{{ venta.cliente.documentNumber }}</p>
+                            </td>
+                            <td class="text-muted">{{ venta.vendedor ? venta.vendedor.completeName : '-' }}</td>
+                            <td>
+                                <span class="badge">{{ venta.paymentMethod|default('-') }}</span>
+                                {% if venta.numberOfInstallments %}
+                                    <span class="mono ml-1 text-xs text-subtle">{{ venta.numberOfInstallments }} cuotas</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if venta.cuotas|length == 0 %}
+                                    <span class="badge-slate">-</span>
+                                {% elseif venta.isPaymentOverdue() %}
+                                    <span class="badge-red">Vencida</span>
+                                {% elseif venta.getDebtStatus() == 'Con Deuda' %}
+                                    <span class="badge-amber">Al dia</span>
+                                {% else %}
+                                    <span class="badge-green">Saldada</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right font-medium">
+                                {{ fmt.money(venta.finalSalePrice, venta.saleCurrency|default('ARS'), 0) }}
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-end gap-1">
+                                    <a href="{{ path('app_ventas_show', {'id': venta.id}) }}" class="btn-secondary btn-sm" data-turbo="false">Ver</a>
+                                    {% if venta.receiptNumber %}
+                                        <a href="{{ path('app_ventas_receipt', {'id': venta.id}) }}" target="_blank" title="Recibo"
+                                           class="btn-ghost btn-sm">{{ icons.icon('document', 'size-4') }}</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="py-16 text-center">
+                                <div class="mx-auto flex max-w-sm flex-col items-center gap-2 text-subtle">
+                                    {{ icons.icon('receipt', 'size-8') }}
+                                    <p class="text-sm font-medium text-muted">No se encontraron ventas</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# ---- Paginacion ---- #}
+            {% if total > 0 %}
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-4 py-3">
+                    <p class="text-xs text-muted">
+                        Mostrando <span class="font-medium text-fg">{{ (currentPage - 1) * 25 + 1 }}-{{ min(currentPage * 25, total) }}</span>
+                        de <span class="font-medium text-fg">{{ total }}</span>
+                    </p>
+                    <div class="flex items-center gap-1">
+                        <a href="{{ path('app_ventas_index', app.request.query.all|merge({'page': currentPage - 1})) }}"
+                           class="btn-ghost btn-sm {{ currentPage == 1 ? 'pointer-events-none opacity-40' : '' }}">
+                            {{ icons.icon('chevron-left', 'size-4') }}
+                        </a>
+                        {% for p in 1..totalPages %}
+                            {% if p == 1 or p == totalPages or (p >= currentPage - 1 and p <= currentPage + 1) %}
+                                <a href="{{ path('app_ventas_index', app.request.query.all|merge({'page': p})) }}"
+                                   class="btn-sm {{ p == currentPage ? 'btn-primary' : 'btn-ghost' }} min-w-8">{{ p }}</a>
+                            {% elseif p == 2 or p == totalPages - 1 %}
+                                <span class="px-1 text-subtle">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        <a href="{{ path('app_ventas_index', app.request.query.all|merge({'page': currentPage + 1})) }}"
+                           class="btn-ghost btn-sm {{ currentPage == totalPages ? 'pointer-events-none opacity-40' : '' }}">
+                            {{ icons.icon('chevron-right', 'size-4') }}
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </turbo-frame>
 {% endblock %}

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Reservas;
 use App\Entity\Vehiculos;
+use App\Enum\VehicleStatus;
 use App\Form\ReservaType;
 use App\Repository\ReservasRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,21 +20,36 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 #[Route('/reservas')]
-#[IsGranted('ROLE_SALESPERSON')]
+#[IsGranted('reservas.ver')]
 class ReservaController extends AbstractController
 {
     #[Route('/', name: 'app_reservas_index', methods: ['GET'])]
-    public function index(ReservasRepository $reservasRepository): Response
+    public function index(Request $request, ReservasRepository $reservasRepository): Response
     {
+        $q      = trim((string) $request->query->get('q')) ?: null;
+        $estado = $request->query->get('estado') ?: null;
+
+        $perPage    = 25;
+        $total      = $reservasRepository->countSearch($q, $estado);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+
         return $this->render('reservas/index.html.twig', [
-            'reservas' => $reservasRepository->findBy([], ['reservation_date' => 'DESC']),
+            'reservas'    => $reservasRepository->search($q, $estado, $page, $perPage),
+            'resumen'     => $reservasRepository->summary(),
+            'q'           => $q,
+            'estado'      => $estado,
+            'total'       => $total,
+            'currentPage' => $page,
+            'totalPages'  => $totalPages,
         ]);
     }
 
     #[Route('/new/{id}', name: 'app_reservas_new', methods: ['GET', 'POST'])]
+    #[IsGranted('reservas.crear')]
     public function new(Request $request, Vehiculos $vehiculo, EntityManagerInterface $entityManager): Response
     {
-        if ($vehiculo->getState() !== 'En Stock') {
+        if ($vehiculo->getState() !== VehicleStatus::EnStock->value) {
             $this->addFlash('danger', 'Este vehículo no está disponible para ser reservado.');
             return $this->redirectToRoute('app_vehiculos_index');
         }
@@ -47,7 +63,7 @@ class ReservaController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $reserva->setVendedor($this->getUser());
             $reserva->setStatus('Activa');
-            $vehiculo->setState('Reservado');
+            $vehiculo->setState(VehicleStatus::Reservado->value);
             
             $entityManager->persist($reserva);
             $entityManager->flush(); // 1. Guardamos para obtener el ID de la reserva
@@ -68,6 +84,29 @@ class ReservaController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/edit', name: 'app_reservas_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('reservas.editar')]
+    public function edit(Request $request, Reservas $reserva, EntityManagerInterface $entityManager): Response
+    {
+        $previousStatus = $reserva->getStatus();
+        $form = $this->createForm(ReservaType::class, $reserva, ['is_edit' => true]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if ($reserva->getStatus() === 'Cancelada' && $previousStatus !== 'Cancelada') {
+                $reserva->getVehiculo()->setState(VehicleStatus::EnStock->value);
+            }
+            $entityManager->flush();
+            $this->addFlash('success', 'Reserva actualizada correctamente.');
+            return $this->redirectToRoute('app_reservas_index');
+        }
+
+        return $this->render('reservas/edit.html.twig', [
+            'reserva' => $reserva,
+            'form'    => $form->createView(),
+        ]);
+    }
+
     #[Route('/{id}/success', name: 'app_reservas_success')]
     public function success(Reservas $reserva): Response
     {
@@ -77,6 +116,7 @@ class ReservaController extends AbstractController
     }
 
     #[Route('/{id}/receipt', name: 'app_reservas_receipt')]
+    #[IsGranted('reservas.ver_recibo')]
     public function receipt(Reservas $reserva): Response
     {
         $pdfOptions = new Options();
@@ -98,6 +138,7 @@ class ReservaController extends AbstractController
     }
 
     #[Route('/{id}/view-receipt', name: 'app_reservas_view_pdf', methods: ['GET'])]
+    #[IsGranted('reservas.ver_recibo')]
     public function viewStoredPdf(Reservas $reserva): Response
     {
         $filename = 'comprobante_reserva_' . $reserva->getReceiptNumber() . '.pdf';

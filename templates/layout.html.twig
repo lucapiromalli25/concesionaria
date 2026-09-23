@@ -1,0 +1,141 @@
+{% import 'partials/icons.html.twig' as icons %}
+{% set route = app.request.attributes.get('_route')|default('') %}
+{% set nav = [
+    { section: null, items: [
+        { label: 'Dashboard', icon: 'home', path: 'app_root', match: ['app_root', 'app_home'], permiso: 'dashboard.ver' }
+    ]},
+    { section: 'Operacion', items: [
+        { label: 'Inventario', icon: 'car',      path: 'app_vehiculos_index', match: ['app_vehiculos'], permiso: 'vehiculos.ver' },
+        { label: 'Reservas',   icon: 'calendar', path: 'app_reservas_index',  match: ['app_reservas'],  permiso: 'reservas.ver' },
+        { label: 'Ventas',     icon: 'receipt',  path: 'app_ventas_index',    match: ['app_ventas'],    permiso: 'ventas.ver' }
+    ]},
+    { section: 'Personas', items: [
+        { label: 'Clientes',    icon: 'users',     path: 'app_clientes_index',    match: ['app_clientes'],    permiso: 'clientes.ver' },
+        { label: 'Proveedores', icon: 'briefcase', path: 'app_proveedores_index', match: ['app_proveedores'], permiso: 'proveedores.ver' }
+    ]},
+    { section: 'Catalogo', items: [
+        { label: 'Marcas',    icon: 'tag', path: 'app_marca_index',     match: ['app_marca'],     permiso: 'catalogo.ver' },
+        { label: 'Modelos',   icon: 'tag', path: 'app_modelos_index',   match: ['app_modelos'],   permiso: 'catalogo.ver' },
+        { label: 'Versiones', icon: 'tag', path: 'app_versiones_index', match: ['app_versiones'], permiso: 'catalogo.ver' }
+    ]},
+    { section: 'Administracion', items: [
+        { label: 'Usuarios', icon: 'users',  path: 'app_user_index',     match: ['app_user'],     permiso: 'usuarios.ver' },
+        { label: 'Roles',    icon: 'shield', path: 'app_roles_index',    match: ['app_roles'],    permiso: 'roles.ver' },
+        { label: 'Permisos', icon: 'key',    path: 'app_permisos_index', match: ['app_permisos'], permiso: 'roles.ver' }
+    ]}
+] %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Atilio Automotores{% endblock %}</title>
+    <link rel="icon" href="{{ asset('assets/img/kaiadmin/favicon.ico') }}" type="image/x-icon"/>
+    <script>
+        // Antes del primer pintado para que no haya flash de tema.
+        (function () {
+            document.documentElement.classList.toggle('dark', localStorage.getItem('tema') === 'dark');
+        })();
+    </script>
+    {% block stylesheets %}{% endblock %}
+    {{ importmap('app') }}
+</head>
+<body class="h-full">
+<div class="min-h-full lg:flex" data-controller="sidebar">
+
+    <div data-sidebar-target="backdrop" data-action="click->sidebar#close"
+         class="fixed inset-0 z-30 hidden bg-stone-900/50 lg:hidden"></div>
+
+    {# ---------- Menu lateral ---------- #}
+    <aside data-sidebar-target="panel"
+           class="fixed inset-y-0 left-0 z-40 flex w-60 -translate-x-full flex-col border-r border-line bg-surface
+                  transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
+        <div class="flex h-14 shrink-0 items-center gap-2 border-b border-line px-4">
+            <a href="{{ path('app_root') }}" class="flex min-w-0 items-center gap-2.5">
+                <img src="{{ asset('assets/img/kaiadmin/atilio_automotores.png') }}" alt="" class="h-7 w-auto">
+                <span class="truncate text-sm font-semibold tracking-tight">Atilio Automotores</span>
+            </a>
+            <button type="button" data-action="sidebar#close" class="btn-ghost btn-icon ml-auto lg:hidden">
+                {{ icons.icon('x', 'size-4') }}
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
+            {% for group in nav %}
+                {% set visible = group.items|filter(i => is_granted(i.permiso)) %}
+                {% if visible|length %}
+                    {% if group.section %}<p class="nav-section">{{ group.section }}</p>{% else %}<div class="pt-3"></div>{% endif %}
+                    {% for item in visible %}
+                        {% set active = group.section is null
+                            ? route in item.match
+                            : item.match|filter(m => route starts with m)|length > 0 %}
+                        <a href="{{ path(item.path) }}" class="{{ active ? 'nav-link-active' : 'nav-link' }}">
+                            {{ icons.icon(item.icon, 'size-[18px] shrink-0') }}
+                            <span>{{ item.label }}</span>
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+        {% if app.user %}
+            <div class="border-t border-line p-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-fg">
+                        {{ app.user.completeName|slice(0, 1)|upper }}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium">{{ app.user.completeName }}</p>
+                        <p class="truncate text-xs text-muted">{{ app.user.email }}</p>
+                    </div>
+                    <a href="{{ path('app_logout') }}" title="Cerrar sesion" class="btn-ghost btn-icon">
+                        {{ icons.icon('logout', 'size-4') }}
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </aside>
+
+    {# ---------- Contenido ----------
+       remote-dialog vive aca para que los botones de la barra superior puedan
+       abrir el dialogo que la pagina declara dentro de <main>. #}
+    <div class="flex min-w-0 flex-1 flex-col" data-controller="remote-dialog">
+        <header class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-app/90 px-4 backdrop-blur sm:px-6">
+            <button type="button" data-action="sidebar#open" class="btn-ghost btn-icon -ml-2 lg:hidden">
+                {{ icons.icon('menu', 'size-5') }}
+            </button>
+            <div class="min-w-0 flex-1">
+                <h1 class="truncate text-base font-semibold tracking-tight">{% block page_title %}{% endblock %}</h1>
+                {% block page_subtitle %}{% endblock %}
+            </div>
+            <div class="flex items-center gap-2">
+                {% block page_actions %}{% endblock %}
+                <button type="button" data-controller="theme" data-action="theme#toggle" class="btn-ghost btn-icon" title="Cambiar a modo oscuro">
+                    <span data-theme-target="icon" data-tema="light">{{ icons.icon('sun', 'size-[18px]') }}</span>
+                    <span data-theme-target="icon" data-tema="dark" class="hidden">{{ icons.icon('moon', 'size-[18px]') }}</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 px-4 py-5 sm:px-6">
+            {% for type, messages in app.flashes %}
+                {% for message in messages %}
+                    {% set tone = {
+                        'success': 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-300',
+                        'danger':  'border-red-200 bg-red-50 text-red-800 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300',
+                        'warning': 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-300'
+                    }[type]|default('border-line bg-surface text-fg') %}
+                    <div class="mb-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm {{ tone }}">
+                        {{ icons.icon(type == 'success' ? 'check' : 'alert', 'size-5 shrink-0') }}
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block body %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% block javascripts %}{% endblock %}
+</body>
+</html>

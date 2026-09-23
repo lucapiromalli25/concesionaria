@@ -1,254 +1,205 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout.html.twig' %}
+{% form_theme form 'form/tailwind_theme.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/format.html.twig' as fmt %}
 
-{% block title %}Registrar Venta de Vehículo{% endblock %}
-
-{% block body %}
-<div class="page-header">
-    <h3 class="fw-bold mb-3">Registrar Venta</h3>
-</div>
-
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h4 class="card-title">Vehículo a Vender</h4></div>
-            <div class="card-body">
-                <h5>{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</h5>
-                <p class="card-text">{{ vehiculo.version.name }} - Año {{ vehiculo.anio }}</p>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Color: <span>{{ vehiculo.color }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Chasis: <span>{{ vehiculo.chassisNumber }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Precio Sugerido: <span class="fw-bold">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header"><h4 class="card-title">Datos de la Venta</h4></div>
-            <div class="card-body">
-                {# Usamos un <form> normal en lugar de form_start para tener control total #}
-                <form name="venta" method="post" action="{{ path('app_ventas_new', {'id': vehiculo.id}) }}" enctype="multipart/form-data">
-                    <div class="form-group">
-                        {{ form_label(form.cliente) }}
-                        <div class="input-group">
-                            {{ form_widget(form.cliente) }}
-                            <button class="btn btn-primary" type="button" id="btn-add-nested-cliente">
-                                <i class="fa fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="text-danger form-error-message mt-1" data-field-error="cliente"></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">{{ form_row(form.sale_date) }}</div>
-                        <div class="col-md-4">{{ form_row(form.saleCurrency) }}</div>
-                        <div class="col-md-4">{{ form_row(form.final_sale_price) }}</div>
-                    </div>
-                    {{ form_row(form.payment_method) }}
-
-                    {# --- SECCIÓN DINÁMICA PARA EL PLAN DE PAGOS (HECHA CON JS) --- #}
-                    <div id="installments-section" class="d-none mt-3">
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h5 class="mb-0">Plan de Pagos</h5>
-                            <button type="button" class="btn btn-sm btn-primary" id="btn-add-installment">
-                                <i class="fa fa-plus"></i> Añadir Cuota
-                            </button>
-                        </div>
-                        <div class="alert alert-info d-flex justify-content-between p-2">
-                            <span>Total a financiar: <strong id="total-a-financiar">$0.00</strong></span>
-                            <span>Suma de cuotas: <strong id="suma-cuotas">$0.00</strong></span>
-                            <span id="diferencia-cuotas" class="fw-bold"></span>
-                        </div>
-                        <div id="installments-editor">
-                            {# Las filas de cuotas se añadirán aquí con JavaScript #}
-                        </div>
-                    </div>
-                    
-                    {{ form_row(form.observations) }}
-                    {{ form_row(form.saleDocumentFile) }}
-                    
-                    {# Campo oculto para enviar los datos de las cuotas al controlador #}
-                    <input type="hidden" name="installments_data" id="installments_data_input">
-                    {{ form_widget(form._token) }} {# Importante para la seguridad de Symfony #}
-
-                    <div class="text-end mt-3">
-                        <a href="{{ path('app_vehiculos_index') }}" class="btn btn-danger">Cancelar</a>
-                        <button type="submit" class="btn btn-success" id="btn-confirmar-venta">Confirmar Venta</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="nestedFormModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title" id="nestedFormModalLabel">Nuevo Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body" id="nested-modal-body-content"></div>
-    </div>
-  </div>
-</div>
+{% block title %}Registrar venta - Atilio Automotores{% endblock %}
+{% block page_title %}Registrar venta{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">
+        {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}{% if vehiculo.plateNumber %} - {{ vehiculo.plateNumber }}{% endif %}
+    </p>
 {% endblock %}
 
+{% block body %}
+<div data-controller="quick-create" data-action="combobox:create->quick-create#open">
+    <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
 
-{% block javascripts %}
-    {{ parent() }}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- INICIALIZACIÓN DE ELEMENTOS ---
-        const mainForm = document.querySelector('form[name="venta"]');
-        const clienteSelect = $('#venta_cliente');
-        clienteSelect.select2({ placeholder: 'Buscar cliente...', width: '100%' });
+        {# ================= Formulario ================= #}
+        <div data-controller="installments"
+             data-installments-preview-url-value="{{ path('app_ventas_plan_preview') }}">
 
-        const paymentMethodSelect = document.getElementById('venta_payment_method');
-        const installmentsSection = document.getElementById('installments-section');
-        const addInstallmentBtn = document.getElementById('btn-add-installment');
-        const installmentsEditor = document.getElementById('installments-editor');
-        const confirmSaleBtn = document.getElementById('btn-confirmar-venta');
-        const hiddenInstallmentsInput = document.getElementById('installments_data_input');
-        
-        let cuotaCounter = 0;
+            <form name="venta" method="post" action="{{ path('app_ventas_new', {'id': vehiculo.id}) }}"
+                  enctype="multipart/form-data" novalidate class="space-y-5">
 
-        // --- LÓGICA DE VISIBILIDAD DEL PLAN DE PAGOS ---
-        function toggleInstallmentsUI() {
-            const isFinanciado = paymentMethodSelect.value === 'Financiado';
-            installmentsSection.classList.toggle('d-none', !isFinanciado);
-            if (!isFinanciado) {
-                installmentsEditor.innerHTML = '';
-                cuotaCounter = 0;
-            }
-            updateInstallmentSum();
-        }
-        paymentMethodSelect.addEventListener('change', toggleInstallmentsUI);
-        toggleInstallmentsUI();
+                {% if not form.vars.valid %}
+                    <div class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+                        {{ icons.icon('alert', 'size-5 shrink-0') }}
+                        <span>Hay campos con errores. Revisalos abajo.</span>
+                    </div>
+                {% endif %}
 
-        // --- AÑADIR/QUITAR FILAS DE CUOTAS ---
-        addInstallmentBtn.addEventListener('click', function() {
-            cuotaCounter++;
-            const newRow = document.createElement('div');
-            newRow.classList.add('row', 'align-items-center', 'mb-2', 'installment-row');
-            
-            newRow.innerHTML = `
-                <div class="col-1"><span class="badge bg-secondary">${cuotaCounter}</span></div>
-                <div class="col-5">
-                    <input type="date" class="form-control due-date-input" required>
+                {# ---- Datos de la venta ---- #}
+                <section class="card p-5">
+                    <h2 class="section-title mb-4">Datos de la venta</h2>
+
+                    <div class="mb-4">{{ form_row(form.cliente) }}</div>
+
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        {{ form_row(form.sale_date, {'attr': {'data-installments-target': 'fecha'}}) }}
+                        {{ form_row(form.saleCurrency, {'attr': {
+                            'data-installments-target': 'moneda',
+                            'data-action': 'installments#recalcular'
+                        }}) }}
+                        {{ form_row(form.final_sale_price, {'attr': {
+                            'data-installments-target': 'precio',
+                            'data-action': 'input->installments#recalcular',
+                            'inputmode': 'decimal'
+                        }}) }}
+                    </div>
+
+                    <div class="mt-4">
+                        {{ form_row(form.payment_method, {'attr': {
+                            'data-installments-target': 'metodo',
+                            'data-action': 'installments#toggle'
+                        }}) }}
+                    </div>
+                </section>
+
+                {# ---- Plan de cuotas ---- #}
+                <section class="card hidden p-5" data-installments-target="section">
+                    <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                            <h2 class="section-title">Plan de cuotas</h2>
+                            <p class="hint mt-0.5">Genera el plan y ajusta las filas que necesites.</p>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <div class="w-28">
+                                {{ form_row(form.numberOfInstallments, {'attr': {
+                                    'data-installments-target': 'count',
+                                    'inputmode': 'numeric', 'min': 1, 'placeholder': '12'
+                                }}) }}
+                            </div>
+                            <button type="button" data-action="installments#generar" class="btn-secondary btn-sm mb-[1px]">
+                                Generar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2">
+                        <span class="text-xs text-muted">
+                            Suma de cuotas:
+                            <span data-installments-target="suma" class="font-semibold tabular-nums text-fg">$ 0,00</span>
+                        </span>
+                        <span data-installments-target="diferencia" class="text-xs"></span>
+                    </div>
+
+                    <div class="space-y-2" data-installments-target="editor"></div>
+
+                    <button type="button" data-action="installments#agregar" class="btn-secondary btn-sm mt-3">
+                        {{ icons.icon('plus', 'size-4') }} Agregar cuota
+                    </button>
+
+                    <input type="hidden" name="installments_data" data-installments-target="hidden">
+                </section>
+
+                {# ---- Documentacion ---- #}
+                <section class="card p-5">
+                    <h2 class="section-title mb-4">Documentacion</h2>
+                    {{ form_row(form.observations, {'attr': {'rows': 3, 'placeholder': 'Entrega, permuta, pagares, condiciones acordadas...'}}) }}
+                    <div class="mt-4">{{ form_row(form.saleDocumentFile) }}</div>
+                </section>
+
+                {{ form_widget(form._token) }}
+
+                <div class="flex justify-end gap-2">
+                    <a href="{{ path('app_vehiculos_index') }}" class="btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn-primary">Confirmar venta</button>
                 </div>
-                <div class="col-5">
-                    <input type="number" step="0.01" class="form-control amount-input" placeholder="Monto" required>
+            </form>
+        </div>
+
+        {# ================= Vehiculo ================= #}
+        <aside class="space-y-5">
+            <section class="card overflow-hidden">
+                {% if vehiculo.imagenesVehiculos is not empty %}
+                    <img src="{{ vich_uploader_asset(vehiculo.imagenesVehiculos|first, 'imageFile') }}" alt=""
+                         class="aspect-video w-full bg-surface-2 object-cover">
+                {% endif %}
+                <div class="p-5">
+                    <h2 class="section-title mb-3">Vehiculo</h2>
+                    <p class="text-base font-semibold">
+                        {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}
+                    </p>
+                    {% if vehiculo.version.name %}<p class="text-sm text-muted">{{ vehiculo.version.name }}</p>{% endif %}
+
+                    <div class="mt-4 flex items-center gap-3">
+                        {% if vehiculo.plateNumber %}<span class="plate">{{ vehiculo.plateNumber }}</span>{% endif %}
+                        <span class="mono text-sm text-muted">{{ vehiculo.anio }}</span>
+                        {{ fmt.estadoVehiculo(vehiculo.state) }}
+                    </div>
+
+                    <dl class="mt-4 space-y-3 border-t border-line pt-4">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="field-label">Precio sugerido</dt>
+                            <dd class="text-sm font-semibold">
+                                {% if vehiculo.suggestedRetailPriceUsd + 0 > 0 %}{{ fmt.money(vehiculo.suggestedRetailPriceUsd, 'USD', 0) }}
+                                {% elseif vehiculo.suggestedRetailPrice + 0 > 0 %}{{ fmt.money(vehiculo.suggestedRetailPrice, 'ARS', 0) }}
+                                {% else %}<span class="badge-amber">sin precio</span>{% endif %}
+                            </dd>
+                        </div>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="field-label">Color</dt>
+                            <dd class="text-sm">{{ vehiculo.color|default('-') }}</dd>
+                        </div>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="field-label">Chasis</dt>
+                            <dd class="text-xs break-all">{{ vehiculo.chassisNumber|default('-') }}</dd>
+                        </div>
+                    </dl>
                 </div>
-                <div class="col-1">
-                    <button type="button" class="btn btn-danger btn-sm btn-remove-installment w-100"><i class="fa fa-trash"></i></button>
+            </section>
+
+            {% if vehiculo.reserva and vehiculo.reserva.status == 'Activa' %}
+                <section class="card p-5">
+                    <h2 class="section-title mb-3">Viene de una reserva</h2>
+                    <p class="text-sm font-medium">
+                        {{ vehiculo.reserva.cliente.firstName }} {{ vehiculo.reserva.cliente.lastName }}
+                    </p>
+                    <p class="mt-1 text-sm text-muted">
+                        Seña de {{ fmt.money(vehiculo.reserva.reservationAmount, vehiculo.reserva.reservationCurrency|default('ARS'), 0) }}
+                    </p>
+                    <p class="hint mt-2">El cliente ya viene precargado. La reserva se marca como completada al confirmar.</p>
+                </section>
+            {% endif %}
+        </aside>
+    </div>
+
+    {# ---- Alta rapida de cliente ---- #}
+    <dialog data-quick-create-target="dialog" data-kind="cliente" class="modal max-w-md">
+        <form action="{{ path('app_catalogo_cliente_rapido') }}" data-action="quick-create#submit">
+            <div class="modal-header">
+                <h3 class="font-semibold">Nuevo cliente</h3>
+                <p class="hint mt-0.5">Si el documento ya existe, se usa ese cliente.</p>
+            </div>
+            <div class="space-y-3 px-5 py-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">Nombre</label>
+                        <input name="firstName" required class="input">
+                    </div>
+                    <div>
+                        <label class="label">Apellido</label>
+                        <input name="lastName" required class="input">
+                    </div>
                 </div>
-            `;
-            installmentsEditor.appendChild(newRow);
-        });
-
-        installmentsEditor.addEventListener('click', function(e) {
-            if (e.target.closest('.btn-remove-installment')) {
-                e.target.closest('.row.installment-row').remove();
-                
-                installmentsEditor.querySelectorAll('.badge.bg-secondary').forEach((badge, index) => {
-                    badge.textContent = index + 1;
-                });
-                cuotaCounter = installmentsEditor.children.length;
-                updateInstallmentSum();
-            }
-        });
-
-        // --- VALIDACIÓN EN VIVO DE LA SUMA DE CUOTAS ---
-        function updateInstallmentSum() {
-            if (paymentMethodSelect.value !== 'Financiado') {
-                confirmSaleBtn.disabled = false;
-                return;
-            }
-            let sum = 0;
-            installmentsEditor.querySelectorAll('.amount-input').forEach(input => { sum += parseFloat(input.value) || 0; });
-            const totalAmount = parseFloat(document.getElementById('venta_final_sale_price').value) || 0;
-            const diferencia = totalAmount - sum;
-            
-            document.getElementById('total-a-financiar').textContent = '$' + totalAmount.toFixed(2);
-            document.getElementById('suma-cuotas').textContent = '$' + sum.toFixed(2);
-            const diffEl = document.getElementById('diferencia-cuotas');
-            diffEl.textContent = 'Diferencia: $' + diferencia.toFixed(2);
-            
-            if (Math.abs(diferencia) < 0.01 && installmentsEditor.children.length > 0) {
-                diffEl.className = 'fw-bold text-success';
-                confirmSaleBtn.disabled = false;
-            } else {
-                diffEl.className = 'fw-bold text-danger';
-                confirmSaleBtn.disabled = true;
-            }
-        }
-        
-        installmentsEditor.addEventListener('input', updateInstallmentSum);
-        document.getElementById('venta_final_sale_price').addEventListener('input', updateInstallmentSum);
-        
-        // --- PREPARAR DATOS ANTES DEL SUBMIT ---
-        mainForm.addEventListener('submit', function(e) {
-            if (paymentMethodSelect.value === 'Financiado') {
-                const installments = [];
-                installmentsEditor.querySelectorAll('.installment-row').forEach(row => {
-                    installments.push({
-                        dueDate: row.querySelector('.due-date-input').value,
-                        amount: row.querySelector('.amount-input').value
-                    });
-                });
-                hiddenInstallmentsInput.value = JSON.stringify(installments);
-            }
-        });
-
-        // --- LÓGICA DE MODAL ANIDADO PARA CLIENTE (NO CAMBIA) ---
-        const nestedModalEl = document.getElementById('nestedFormModal');
-        const nestedFormModal = new bootstrap.Modal(nestedModalEl);
-        const nestedModalBody = document.getElementById('nested-modal-body-content');
-
-        document.getElementById('btn-add-nested-cliente').addEventListener('click', function() {
-            fetch('{{ path('app_clientes_new') }}')
-                .then(r => r.text()).then(html => {
-                    nestedModalBody.innerHTML = html;
-                    nestedFormModal.show();
-                    attachNestedFormSubmitListener();
-                });
-        });
-
-        function attachNestedFormSubmitListener() {
-            const nestedForm = document.getElementById('formCliente');
-            if (!nestedForm) return;
-            nestedForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = nestedForm.querySelector('button[type="submit"]');
-                const spinner = btn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                btn.disabled = true;
-
-                fetch(nestedForm.action, { method: 'POST', body: new FormData(nestedForm), headers: {'X-Requested-with': 'XMLHttpRequest'} })
-                .then(r => r.json()).then(data => {
-                    if (data.status === 'success') {
-                        const newClient = data.cliente;
-                        const newOption = new Option(newClient.displayText, newClient.id, true, true);
-                        clienteSelect.append(newOption).trigger('change');
-                        nestedFormModal.hide();
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                    } else {
-                        Object.keys(data.errors).forEach(fieldName => {
-                            const container = nestedForm.querySelector(`[data-field-error="${fieldName}"]`);
-                            if (container) { container.innerHTML = `<p class="mb-0">${data.errors[fieldName].join(', ')}</p>`; }
-                        });
-                    }
-                })
-                .finally(() => {
-                    spinner.classList.add('d-none');
-                    btn.disabled = false;
-                });
-            });
-        }
-    });
-    </script>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">DNI</label>
+                        <input name="documentNumber" required class="input" inputmode="numeric">
+                    </div>
+                    <div>
+                        <label class="label">Telefono</label>
+                        <input name="phone" class="input" inputmode="tel">
+                    </div>
+                </div>
+                <p data-error class="hidden rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-action="quick-create#close" class="btn-secondary btn-sm">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm">Crear y seleccionar</button>
+            </div>
+        </form>
+    </dialog>
+</div>
 {% endblock %}

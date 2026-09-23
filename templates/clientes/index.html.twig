@@ -1,162 +1,147 @@
-{% extends 'base.html.twig' %}
-{% block title %}Gestión de Clientes{% endblock %}
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/table.html.twig' as tbl %}
 
-{% block body %}
-<div class="page-header"><h3 class="fw-bold mb-3">Gestión de Clientes</h3></div>
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex align-items-center">
-                    <h4 class="card-title">Listado de Clientes</h4>
-                    <button id="btn-nuevo-cliente" class="btn btn-primary btn-round ms-auto">
-                        <i class="fa fa-plus"></i> Agregar Cliente
-                    </button>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover" id="tabla-clientes">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre Completo</th>
-                                <th>Documento</th>
-                                <th>Teléfono</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for cliente in clientes %}
-                            <tr data-id="{{ cliente.id }}">
-                                <td>{{ cliente.id }}</td>
-                                <td class="cliente-name">{{ cliente.firstName }} {{ cliente.lastName }}</td>
-                                <td class="cliente-document">{{ cliente.documentNumber }}</td>
-                                <td class="cliente-phone">{{ cliente.phone }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-warning btn-sm btn-editar">Editar</button>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr id="fila-sin-clientes"><td colspan="5" class="text-center">No se encontraron clientes</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="formModalLabel">Nuevo Cliente</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modal-body-content"></div>
-    </div>
-  </div>
-</div>
+{% block title %}Clientes - Atilio Automotores{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">{{ total }} cliente{{ total == 1 ? '' : 's' }}</p>
 {% endblock %}
 
-{% block javascripts %}
-    {{ parent() }}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const formModal = new bootstrap.Modal(document.getElementById('formModal'));
-        const modalBody = document.getElementById('modal-body-content');
-        const modalTitle = document.getElementById('formModalLabel');
-        const tablaBody = document.querySelector('#tabla-clientes tbody');
+{% block page_actions %}
+    {% if is_granted('clientes.crear') %}
+        <button type="button" class="btn-primary btn-sm"
+                data-action="remote-dialog#open"
+                data-dialog-url="{{ path('app_clientes_new') }}"
+                data-dialog-title="Nuevo cliente">
+            {{ icons.icon('plus', 'size-4') }}<span class="hidden sm:inline">Nuevo cliente</span>
+        </button>
+    {% endif %}
+{% endblock %}
 
-        document.getElementById('btn-nuevo-cliente').addEventListener('click', function() {
-            modalTitle.textContent = 'Nuevo Cliente';
-            fetch('{{ path('app_clientes_new') }}')
-                .then(r => r.text()).then(html => {
-                    modalBody.innerHTML = html;
-                    formModal.show();
-                    attachFormSubmitListener();
-                });
-        });
+{% block body %}
+<div>
+    <turbo-frame id="clientes" data-turbo-action="advance" class="block">
+        <div class="card overflow-hidden">
 
-        tablaBody.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('btn-editar')) {
-                const row = e.target.closest('tr');
-                const clienteId = row.dataset.id;
-                modalTitle.textContent = `Editar Cliente #${clienteId}`;
-                const url = `{{ path('app_clientes_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', clienteId);
-                fetch(url).then(r => r.text()).then(html => {
-                    modalBody.innerHTML = html;
-                    formModal.show();
-                    attachFormSubmitListener();
-                });
-            }
-        });
+            <form method="get" action="{{ path('app_clientes_index') }}"
+                  data-controller="filter-form" data-action="input->filter-form#submit"
+                  class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
+                <div class="relative min-w-64 flex-1">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
+                        {{ icons.icon('search', 'size-4') }}
+                    </span>
+                    <input type="search" name="q" value="{{ q }}" autocomplete="off"
+                           placeholder="Buscar por nombre, apellido, DNI o telefono" class="input pl-9">
+                </div>
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <noscript><button type="submit" class="btn-primary">Buscar</button></noscript>
+                {% if q %}
+                    <a href="{{ path('app_clientes_index') }}" class="btn-ghost btn-sm">{{ icons.icon('x', 'size-4') }} Limpiar</a>
+                {% endif %}
+            </form>
 
-        function attachFormSubmitListener() {
-            const form = document.getElementById('formCliente');
-            if (!form) return;
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                // ... Lógica de spinner, fetch, y manejo de errores (idéntica a la de los CRUDs anteriores)
-                const submitButton = form.querySelector('button[type="submit"]');
-                const spinner = submitButton.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                submitButton.disabled = true;
-                form.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            {{ tbl.sortable('Cliente', 'apellido', sort, dir, 'app_clientes_index') }}
+                            {{ tbl.sortable('Documento', 'documento', sort, dir, 'app_clientes_index') }}
+                            <th>Telefono</th>
+                            <th>Domicilio</th>
+                            <th class="text-right">Operaciones</th>
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for fila in filas %}
+                        {% set cliente = fila[0] %}
+                        <tr>
+                            <td class="font-medium">{{ cliente.firstName }} {{ cliente.lastName }}</td>
+                            <td class="mono">{{ cliente.documentNumber }}</td>
+                            <td class="mono text-muted">{{ cliente.phone|default('-') }}</td>
+                            <td class="max-w-xs truncate text-muted" title="{{ cliente.address }}">
+                                {{ cliente.address|default('-') }}
+                            </td>
+                            <td class="text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    {% if fila.ventas > 0 %}
+                                        <a href="{{ path('app_ventas_index', {'q': cliente.documentNumber}) }}"
+                                           class="badge-green" data-turbo="false">{{ fila.ventas }} venta{{ fila.ventas == 1 ? '' : 's' }}</a>
+                                    {% endif %}
+                                    {% if fila.reservas > 0 %}
+                                        <span class="badge-sky">{{ fila.reservas }} reserva{{ fila.reservas == 1 ? '' : 's' }}</span>
+                                    {% endif %}
+                                    {% if fila.ventas == 0 and fila.reservas == 0 %}
+                                        <span class="text-xs text-subtle">sin operaciones</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-end gap-1">
+                                    {% if is_granted('clientes.editar') %}
+                                        <button type="button" class="btn-ghost btn-sm" title="Editar"
+                                                data-action="remote-dialog#open"
+                                                data-dialog-url="{{ path('app_clientes_edit', {'id': cliente.id}) }}"
+                                                data-dialog-title="Editar cliente">
+                                            {{ icons.icon('pencil', 'size-4') }}
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="py-16 text-center">
+                                <div class="mx-auto flex max-w-sm flex-col items-center gap-2 text-subtle">
+                                    {{ icons.icon('users', 'size-8') }}
+                                    <p class="text-sm font-medium text-muted">No se encontraron clientes</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-                fetch(form.action, { method: 'POST', body: new FormData(form), headers: {'X-Requested-With': 'XMLHttpRequest'} })
-                .then(response => { if (!response.ok) { return response.json().then(err => Promise.reject(err)); } return response.json(); })
-                .then(data => {
-                    if (data.status === 'success') {
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        if (form.action.includes('/edit')) {
-                            updateTableRow(data.cliente);
-                        } else {
-                            addTableRow(data.cliente);
-                        }
-                        formModal.hide();
-                    }else{
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
-                    }
-                })
-                .catch(errorData => { /* ... Manejo de errores ... */ })
-                .finally(() => { spinner.classList.add('d-none'); submitButton.disabled = false; });
-            });
-        }
+            {% if total > 0 %}
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-4 py-3">
+                    <p class="text-xs text-muted">
+                        Mostrando <span class="font-medium text-fg">{{ (currentPage - 1) * 25 + 1 }}-{{ min(currentPage * 25, total) }}</span>
+                        de <span class="font-medium text-fg">{{ total }}</span>
+                    </p>
+                    <div class="flex items-center gap-1">
+                        <a href="{{ path('app_clientes_index', app.request.query.all|merge({'page': currentPage - 1})) }}"
+                           class="btn-ghost btn-sm {{ currentPage == 1 ? 'pointer-events-none opacity-40' : '' }}">
+                            {{ icons.icon('chevron-left', 'size-4') }}
+                        </a>
+                        {% for p in 1..totalPages %}
+                            {% if p == 1 or p == totalPages or (p >= currentPage - 1 and p <= currentPage + 1) %}
+                                <a href="{{ path('app_clientes_index', app.request.query.all|merge({'page': p})) }}"
+                                   class="btn-sm {{ p == currentPage ? 'btn-primary' : 'btn-ghost' }} min-w-8">{{ p }}</a>
+                            {% elseif p == 2 or p == totalPages - 1 %}
+                                <span class="px-1 text-subtle">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        <a href="{{ path('app_clientes_index', app.request.query.all|merge({'page': currentPage + 1})) }}"
+                           class="btn-ghost btn-sm {{ currentPage == totalPages ? 'pointer-events-none opacity-40' : '' }}">
+                            {{ icons.icon('chevron-right', 'size-4') }}
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </turbo-frame>
 
-        function updateTableRow(cliente) {
-            const row = tablaBody.querySelector(`tr[data-id="${cliente.id}"]`);
-            if (row) {
-                row.querySelector('.cliente-name').textContent = `${cliente.first_name} ${cliente.last_name}`;
-                row.querySelector('.cliente-document').textContent = cliente.document_number;
-                row.querySelector('.cliente-phone').textContent = cliente.phone;
-            }
-        }
-
-        function addTableRow(cliente) {
-            document.getElementById('fila-sin-clientes')?.remove();
-            const newRowHtml = `
-                <tr data-id="${cliente.id}">
-                    <td>${cliente.id}</td>
-                    <td class="cliente-name">${cliente.first_name} ${cliente.last_name}</td>
-                    <td class="cliente-document">${cliente.document_number}</td>
-                    <td class="cliente-phone">${cliente.phone}</td>
-                    <td class="text-end"><button class="btn btn-warning btn-sm btn-editar">Editar</button></td>
-                </tr>`;
-            tablaBody.insertAdjacentHTML('afterbegin', newRowHtml); // afterbegin para mostrarlo primero
-        }
-    });
-
-    $(document).ready(function() {
-        $('#tabla-clientes').DataTable({
-            "pageLength": 10,
-            "language": {
-                "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-            },
-            "order": [[ 0, "desc" ]]
-        });
-    });
-    </script>
+    <dialog data-remote-dialog-target="dialog" class="modal max-w-lg">
+        <div class="modal-header flex items-center justify-between">
+            <h3 class="font-semibold" data-remote-dialog-target="title"></h3>
+            <button type="button" data-action="remote-dialog#close" class="btn-ghost btn-icon">
+                {{ icons.icon('x', 'size-4') }}
+            </button>
+        </div>
+        <div data-remote-dialog-target="content"></div>
+    </dialog>
+</div>
 {% endblock %}

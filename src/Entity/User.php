@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -23,10 +25,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $email = null;
 
     /**
-     * @var list<string> The user roles
+     * Roles legacy en JSON. Los reemplaza la relacion con Rol; queda mientras dure
+     * la transicion para poder volver atras, y se borra en una migracion posterior.
+     *
+     * @var list<string>
+     *
+     * @deprecated usar getRolesAsignados()
      */
     #[ORM\Column]
     private array $roles = [];
+
+    /** @var Collection<int, UsuarioRol> */
+    #[ORM\OneToMany(mappedBy: 'usuario', targetEntity: UsuarioRol::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $usuarioRoles;
 
     /**
      * @var string The hashed password
@@ -39,6 +50,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 20, unique: true)]
     private ?string $dni = null;
+
+    public function __construct()
+    {
+        $this->usuarioRoles = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -68,25 +84,120 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
+     * Los roles de seguridad salen de la tabla `rol`: cada rol asignado aporta
+     * ROLE_<CODIGO>, y la jerarquia de security.yaml los conecta con los roles
+     * viejos (ROLE_ADMINISTRADOR -> ROLE_ADMIN, etc).
+     *
      * @see UserInterface
      */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
+        $roles = ['ROLE_USER'];
 
-        return array_unique($roles);
+        foreach ($this->usuarioRoles as $asignacion) {
+            $rol = $asignacion->getRol();
+            if ($rol && $rol->estaActivo()) {
+                $roles[] = 'ROLE_'.strtoupper((string) $rol->getCodigo());
+            }
+        }
+
+        return array_values(array_unique($roles));
     }
 
     /**
      * @param list<string> $roles
+     *
+     * @deprecated escribe la columna legacy; para asignar permisos usar addRol()
      */
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
 
         return $this;
+    }
+
+    /** @return list<string> Roles legacy en JSON, solo para la migracion. */
+    public function getRolesLegacy(): array
+    {
+        return $this->roles;
+    }
+
+    /** @return Collection<int, UsuarioRol> */
+    public function getUsuarioRoles(): Collection
+    {
+        return $this->usuarioRoles;
+    }
+
+    /** @return list<Rol> */
+    public function getRolesAsignados(): array
+    {
+        $roles = [];
+        foreach ($this->usuarioRoles as $asignacion) {
+            if ($asignacion->getRol()) {
+                $roles[] = $asignacion->getRol();
+            }
+        }
+
+        return $roles;
+    }
+
+    public function tieneRol(Rol $rol): bool
+    {
+        foreach ($this->usuarioRoles as $asignacion) {
+            if ($asignacion->getRol() === $rol) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function addRol(Rol $rol): static
+    {
+        if (!$this->tieneRol($rol)) {
+            $this->usuarioRoles->add(new UsuarioRol($this, $rol));
+        }
+
+        return $this;
+    }
+
+    public function removeRol(Rol $rol): static
+    {
+        foreach ($this->usuarioRoles as $asignacion) {
+            if ($asignacion->getRol() === $rol) {
+                $this->usuarioRoles->removeElement($asignacion);
+            }
+        }
+
+        return $this;
+    }
+
+    public function esAdministrador(): bool
+    {
+        foreach ($this->getRolesAsignados() as $rol) {
+            if ($rol->esAdministrador() && $rol->estaActivo()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Claves de funcionalidad que el usuario tiene por sus roles.
+     *
+     * @return list<string>
+     */
+    public function getClaves(): array
+    {
+        $claves = [];
+        foreach ($this->getRolesAsignados() as $rol) {
+            if ($rol->estaActivo()) {
+                $claves = array_merge($claves, $rol->getClaves());
+            }
+        }
+
+        return array_values(array_unique($claves));
     }
 
     /**

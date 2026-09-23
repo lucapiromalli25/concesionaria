@@ -16,28 +16,22 @@ class MarcasRepository extends ServiceEntityRepository
         parent::__construct($registry, Marcas::class);
     }
 
-//    /**
-//     * @return Marcas[] Returns an array of Marcas objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('m.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * Marcas con cuantos modelos cuelgan de cada una y cuantos vehiculos hay
+     * cargados, para poder ver que parte del catalogo se usa de verdad.
+     */
+    public function searchWithUsage(?string $q): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->select('m')
+            ->addSelect('(SELECT COUNT(mo.id) FROM App\Entity\Modelos mo WHERE mo.marca = m) AS modelos')
+            ->addSelect('(SELECT COUNT(v.id) FROM App\Entity\Vehiculos v JOIN v.version ver JOIN ver.modelo mo2 WHERE mo2.marca = m) AS vehiculos')
+            ->orderBy('m.name', 'ASC');
 
-//    public function findOneBySomeField($value): ?Marcas
-//    {
-//        return $this->createQueryBuilder('m')
-//            ->andWhere('m.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($q) {
+            $qb->andWhere('m.name LIKE :q')->setParameter('q', '%' . $q . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

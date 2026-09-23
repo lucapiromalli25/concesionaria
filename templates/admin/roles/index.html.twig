@@ -1,0 +1,125 @@
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+
+{% block title %}Roles - Atilio Automotores{% endblock %}
+{% block page_title %}Roles{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">{{ filas|length }} rol{{ filas|length == 1 ? '' : 'es' }}</p>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_permisos_index') }}" class="btn-secondary btn-sm">
+        {{ icons.icon('shield', 'size-4') }}<span class="hidden sm:inline">Matriz de permisos</span>
+    </a>
+    {% if is_granted('roles.administrar') %}
+        <button type="button" class="btn-primary btn-sm"
+                data-action="remote-dialog#open"
+                data-dialog-url="{{ path('app_roles_new') }}"
+                data-dialog-title="Nuevo rol">
+            {{ icons.icon('plus', 'size-4') }}<span class="hidden sm:inline">Nuevo rol</span>
+        </button>
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+<div data-controller="confirm-action">
+    <div class="card overflow-hidden">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Rol</th>
+                        <th>Codigo</th>
+                        <th class="text-right">Permisos</th>
+                        <th class="text-right">Usuarios</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for fila in filas %}
+                    {% set rol = fila[0] %}
+                    <tr>
+                        <td>
+                            <p class="font-medium">
+                                {{ rol.nombre }}
+                                {% if rol.esSistema %}
+                                    <span class="badge-accent ml-1" title="Pasa todos los permisos y no se puede editar">de sistema</span>
+                                {% endif %}
+                            </p>
+                            {% if rol.descripcion %}
+                                <p class="text-xs text-subtle">{{ rol.descripcion }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="mono text-xs text-muted">{{ rol.codigo }}</td>
+                        <td class="text-right">
+                            {% if rol.esAdministrador %}
+                                <span class="badge-accent">todos</span>
+                            {% elseif rol.claves|length %}
+                                <a href="{{ path('app_permisos_index') }}" class="badge">{{ rol.claves|length }}</a>
+                            {% else %}
+                                <span class="badge-amber">ninguno</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            {% if fila.usuarios > 0 %}
+                                <span class="badge">{{ fila.usuarios }}</span>
+                            {% else %}
+                                <span class="text-xs text-subtle">sin usuarios</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex items-center justify-end gap-1">
+                                {% if is_granted('roles.administrar') and not rol.esSistema %}
+                                    <button type="button" class="btn-ghost btn-sm" title="Editar"
+                                            data-action="remote-dialog#open"
+                                            data-dialog-url="{{ path('app_roles_edit', {'id': rol.id}) }}"
+                                            data-dialog-title="Editar rol">
+                                        {{ icons.icon('pencil', 'size-4') }}
+                                    </button>
+                                    {% if fila.usuarios == 0 %}
+                                        <button type="button" class="btn-ghost btn-sm text-red-600" title="Eliminar"
+                                                data-action="confirm-action#ask"
+                                                data-confirm-url="{{ path('app_roles_eliminar', {'id': rol.id}) }}"
+                                                data-confirm-token="{{ csrf_token('eliminar-rol' ~ rol.id) }}"
+                                                data-confirm-label="Eliminar rol"
+                                                data-confirm-message="Se elimina el rol {{ rol.nombre }}. No lo tiene ningun usuario asignado.">
+                                            {{ icons.icon('trash', 'size-4') }}
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="hint mt-3">
+        Los permisos de cada rol se cargan en la matriz. El rol de sistema pasa todo por codigo:
+        existe para que nadie quede afuera por error.
+    </p>
+
+    <dialog data-remote-dialog-target="dialog" class="modal max-w-md">
+        <div class="modal-header flex items-center justify-between">
+            <h3 class="font-semibold" data-remote-dialog-target="title"></h3>
+            <button type="button" data-action="remote-dialog#close" class="btn-ghost btn-icon">
+                {{ icons.icon('x', 'size-4') }}
+            </button>
+        </div>
+        <div data-remote-dialog-target="content"></div>
+    </dialog>
+
+    <dialog data-confirm-action-target="dialog" class="modal max-w-sm">
+        <div class="px-5 py-4">
+            <h3 class="font-semibold">Confirmar</h3>
+            <p class="mt-1.5 text-sm text-muted" data-confirm-action-target="message"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" data-action="confirm-action#close" class="btn-secondary btn-sm">Cancelar</button>
+            <button type="button" data-action="confirm-action#confirm" data-confirm-action-target="submit" class="btn-danger btn-sm"></button>
+        </div>
+    </dialog>
+</div>
+{% endblock %}

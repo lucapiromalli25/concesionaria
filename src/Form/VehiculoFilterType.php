@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\Entity\Marcas;
+use App\Enum\VehicleStatus;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -23,11 +24,7 @@ class VehiculoFilterType extends AbstractType
             ->add('state', ChoiceType::class, [
                 'required' => false,
                 'placeholder' => 'Todos los Estados',
-                'choices' => [
-                    'En Stock' => 'En Stock',
-                    'Reservado' => 'Reservado',
-                    'Vendido' => 'Vendido',
-                ]
+                'choices' => VehicleStatus::choices(),
             ]);
     }
 

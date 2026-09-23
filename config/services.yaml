@@ -5,6 +5,7 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     reservations_directory: '%kernel.project_dir%/public/uploads/documents/reservations'
+    app.exchange_rate_usd_ars: 1250.00
 
 services:
     # default configuration for services in *this* file
@@ -16,6 +17,11 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+
+    # El catalogo de permisos necesita la ruta del archivo, que no es autowireable.
+    App\Service\CatalogoPermisos:
+        arguments:
+            $archivo: '%kernel.project_dir%/config/permisos.php'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

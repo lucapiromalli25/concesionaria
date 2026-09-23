@@ -1,0 +1,21 @@
+{% form_theme form 'form/tailwind_theme.html.twig' %}
+{% set marca = form.vars.value %}
+
+{{ form_start(form, {
+    'action': marca.id ? path('app_marca_edit', {'id': marca.id}) : path('app_marca_new'),
+    'attr': {'novalidate': 'novalidate'}
+}) }}
+    {% if not form.vars.valid %}
+        <div class="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+            {{ form_errors(form) }}
+            {% if form.vars.errors|length == 0 %}No se pudo guardar. Revisa los campos marcados.{% endif %}
+        </div>
+    {% endif %}
+    <div class="px-5 py-4">
+        {{ form_row(form.name, {'label': 'Nombre de la marca', 'attr': {'placeholder': 'Volkswagen'}}) }}
+    </div>
+    <div class="modal-footer">
+        <button type="button" data-action="remote-dialog#close" class="btn-secondary btn-sm">Cancelar</button>
+        <button type="submit" class="btn-primary btn-sm">Guardar</button>
+    </div>
+{{ form_end(form) }}

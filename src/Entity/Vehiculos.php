@@ -11,6 +11,7 @@ use App\Entity\Reservas;
 use App\Entity\Proveedores;
 use Symfony\Component\HttpFoundation\File\File;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: VehiculosRepository::class)]
 #[Vich\Uploadable]
@@ -86,7 +87,13 @@ class Vehiculos
         $this->imagenesVehiculos = new ArrayCollection();
     }
 
+    // Formatos validos: auto viejo AAA111, auto Mercosur AA111AA,
+    // moto vieja 111AAA, moto Mercosur A111AAA.
     #[ORM\Column(length: 20, nullable: true, unique: true)]
+    #[Assert\Regex(
+        pattern: '/^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2}|[0-9]{3}[A-Z]{3}|[A-Z][0-9]{3}[A-Z]{3})$/',
+        message: 'Formato de patente invalido. Autos: ABC123 o AB123CD. Motos: 123ABC o A123BCD.'
+    )]
     private ?string $plateNumber = null;
 
     #[ORM\ManyToOne(inversedBy: 'vehiculosComprados')]
@@ -372,7 +379,8 @@ class Vehiculos
 
     public function setPlateNumber(?string $plateNumber): static
     {
-        $this->plateNumber = $plateNumber;
+        $plateNumber = strtoupper(trim((string) $plateNumber));
+        $this->plateNumber = $plateNumber === '' ? null : $plateNumber;
 
         return $this;
     }

@@ -1,30 +1,39 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/format.html.twig' as fmt %}
 
-{% block title %}Reserva Registrada{% endblock %}
+{% block title %}Reserva registrada - Atilio Automotores{% endblock %}
+{% block page_title %}Reserva registrada{% endblock %}
 
 {% block body %}
-<div class="page-inner">
-    <div class="d-flex align-items-center justify-content-center" style="min-height: 60vh;">
-        <div class="text-center">
-            <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-            <h3 class="fw-bold">¡Reserva registrada con éxito!</h3>
-            <p class="text-muted">Descargando comprobante...</p>
+<div class="mx-auto max-w-lg">
+    <div class="card p-6 text-center">
+        <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+            {{ icons.icon('check', 'size-6') }}
+        </div>
+        <h2 class="mt-4 text-lg font-semibold">Reserva {{ reserva.receiptNumber }}</h2>
+        <p class="mt-1 text-sm text-muted">
+            {{ reserva.vehiculo.version.modelo.marca.name }} {{ reserva.vehiculo.version.modelo.name }}
+            reservado por {{ reserva.cliente.firstName }} {{ reserva.cliente.lastName }}.
+        </p>
+
+        <dl class="mt-5 grid grid-cols-2 gap-4 border-y border-line py-4 text-left">
+            <div>
+                <dt class="field-label">Seña</dt>
+                <dd class="field-value">{{ fmt.money(reserva.reservationAmount, reserva.reservationCurrency|default('ARS'), 0) }}</dd>
+            </div>
+            <div>
+                <dt class="field-label">Vence</dt>
+                <dd class="field-value mono">{{ reserva.expirationDate ? reserva.expirationDate|date('d/m/Y') : 'Sin fecha' }}</dd>
+            </div>
+        </dl>
+
+        <div class="mt-5 flex flex-col gap-2 sm:flex-row">
+            <a href="{{ path('app_reservas_receipt', {'id': reserva.id}) }}" class="btn-primary flex-1">
+                {{ icons.icon('document', 'size-4') }} Descargar recibo
+            </a>
+            <a href="{{ path('app_vehiculos_index') }}" class="btn-secondary flex-1">Volver al inventario</a>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block javascripts %}
-    {{ parent() }}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Disparar la descarga del comprobante
-            window.location.href = '{{ path('app_reservas_receipt', {'id': reserva.id}) }}';
-
-            // Después de 2 segundos, redirigir al listado de vehículos
-            setTimeout(function() {
-                window.location.href = '{{ path('app_vehiculos_index') }}';
-            }, 2000);
-        });
-    </script>
 {% endblock %}

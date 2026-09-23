@@ -4,7 +4,8 @@ namespace App\Form;
 
 use App\Entity\Clientes;
 use App\Entity\Ventas;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use App\Form\Type\EntitySearchType;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -17,15 +18,21 @@ use Vich\UploaderBundle\Form\Type\VichFileType;
 
 class VentaType extends AbstractType
 {
+    public function __construct(private UrlGeneratorInterface $urlGenerator)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('cliente', EntityType::class, [
+            ->add('cliente', EntitySearchType::class, [
                 'class' => Clientes::class,
-                // Muestra un texto útil en el desplegable en lugar de solo el ID
-                'choice_label' => fn(Clientes $c) => "{$c->getFirstName()} {$c->getLastName()} (DNI: {$c->getDocumentNumber()})",
-                'placeholder' => 'Buscar cliente...',
-                'attr' => ['class' => 'form-select'] // Para que Select2 lo tome
+                'label' => 'Cliente',
+                'choice_label' => fn(Clientes $c) => "{$c->getFirstName()} {$c->getLastName()} (DNI {$c->getDocumentNumber()})",
+                'search_url' => $this->urlGenerator->generate('app_catalogo_buscar_clientes'),
+                'placeholder' => 'Buscar por nombre o DNI...',
+                'create_label' => 'Cargar cliente nuevo',
+                'kind' => 'cliente',
             ])
             ->add('sale_date', DateType::class, [
                 'label' => 'Fecha de Venta',
@@ -59,9 +66,7 @@ class VentaType extends AbstractType
             ->add('numberOfInstallments', NumberType::class, [
                 'label' => 'Cantidad de Cuotas',
                 'required' => false,
-                'attr' => ['placeholder' => 'Ej: 12'],
-                // Le damos un ID al contenedor para encontrarlo con JS
-                'row_attr' => ['id' => 'field-installments', 'class' => 'd-none'] 
+                'attr' => ['placeholder' => 'Ej: 12', 'min' => 1],
             ])
             ->add('observations', TextareaType::class, [
                 'label' => 'Observaciones',

@@ -33,28 +33,39 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
-    //    /**
-    //     * @return User[] Returns an array of User objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('u.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Usuarios con lo que hizo cada uno, para saber quien opera de verdad
+     * antes de tocarle los permisos.
+     */
+    public function findAllWithActivity(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->select('u')
+            ->addSelect('(SELECT COUNT(v.id) FROM App\Entity\Ventas v WHERE v.vendedor = u) AS ventas')
+            ->addSelect('(SELECT COUNT(r.id) FROM App\Entity\Reservas r WHERE r.vendedor = u) AS reservas')
+            ->addSelect('(SELECT COUNT(ve.id) FROM App\Entity\Vehiculos ve WHERE ve.created_by = u) AS vehiculos')
+            ->leftJoin('u.usuarioRoles', 'ur')->addSelect('ur')
+            ->leftJoin('ur.rol', 'rol')->addSelect('rol')
+            ->orderBy('u.complete_name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?User
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * DNIs cargados mas de una vez. El login usa el DNI como identificador y la
+     * columna no tiene indice unico: si se repite, la autenticacion falla.
+     *
+     * @return string[]
+     */
+    public function duplicatedDnis(): array
+    {
+        $filas = $this->createQueryBuilder('u')
+            ->select('u.dni')
+            ->groupBy('u.dni')
+            ->having('COUNT(u.id) > 1')
+            ->getQuery()
+            ->getResult();
+
+        return array_column($filas, 'dni');
+    }
 }

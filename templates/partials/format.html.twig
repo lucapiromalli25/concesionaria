@@ -1,0 +1,58 @@
+{# Importes: siempre con su moneda, nunca un "$" generico. #}
+{% macro money(amount, currency = 'ARS', decimals = 2) %}
+    {%- if amount is null or amount == '' -%}
+        <span class="text-subtle">-</span>
+    {%- else -%}
+        {%- set simbolo = currency == 'USD' ? 'USD' : '$' -%}
+        <span class="mono whitespace-nowrap">{{ simbolo }} {{ amount|number_format(decimals, ',', '.') }}</span>
+    {%- endif -%}
+{% endmacro %}
+
+{# Importe con la moneda en un chip, ambos del mismo tamaño. #}
+{% macro montoConMoneda(amount, currency, size = 'text-lg') %}
+    <span class="flex items-center gap-1.5">
+        <span class="currency-tag">{{ currency }}</span>
+        <span class="{{ size }} font-semibold tabular-nums">{{ (amount ?: 0)|number_format(0, ',', '.') }}</span>
+    </span>
+{% endmacro %}
+
+{# Par ARS + USD listados uno debajo del otro, misma tipografia y tamaño. #}
+{% macro montos(montos, size = 'text-lg', tono = '') %}
+    {% import _self as fmt %}
+    <div class="space-y-1 {{ tono }}">
+        {% set hayAlguno = (montos.ARS|default(0) > 0) or (montos.USD|default(0) > 0) %}
+        {% if not hayAlguno %}
+            <span class="{{ size }} font-semibold text-subtle">-</span>
+        {% else %}
+            {% if montos.ARS|default(0) > 0 %}{{ fmt.montoConMoneda(montos.ARS, 'ARS', size) }}{% endif %}
+            {% if montos.USD|default(0) > 0 %}{{ fmt.montoConMoneda(montos.USD, 'USD', size) }}{% endif %}
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{# Estado del vehiculo con su color. #}
+{% macro estadoVehiculo(estado) %}
+    {%- set tono = {'En Stock': 'badge-green', 'Reservado': 'badge-sky', 'Vendido': 'badge-slate'}[estado]|default('badge') -%}
+    <span class="{{ tono }}">{{ estado }}</span>
+{% endmacro %}
+
+{# Estado de una cuota, considerando si esta vencida. #}
+{% macro estadoCuota(cuota) %}
+    {%- if cuota.status == 'Pagada' -%}
+        <span class="badge-green">Pagada</span>
+    {%- elseif cuota.dueDate and cuota.dueDate < date('today') -%}
+        <span class="badge-red">Vencida</span>
+    {%- else -%}
+        <span class="badge-amber">Pendiente</span>
+    {%- endif -%}
+{% endmacro %}
+
+{# Estado de una reserva. #}
+{% macro estadoReserva(reserva) %}
+    {%- if reserva.status == 'Activa' and reserva.expirationDate and reserva.expirationDate < date('today') -%}
+        <span class="badge-red">Vencida</span>
+    {%- else -%}
+        {%- set tono = {'Activa': 'badge-sky', 'Completada': 'badge-green', 'Cancelada': 'badge-slate'}[reserva.status]|default('badge') -%}
+        <span class="{{ tono }}">{{ reserva.status }}</span>
+    {%- endif -%}
+{% endmacro %}

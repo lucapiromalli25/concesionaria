@@ -1,0 +1,30 @@
+{% form_theme form 'form/tailwind_theme.html.twig' %}
+{% set cliente = form.vars.value %}
+
+{{ form_start(form, {
+    'action': cliente.id ? path('app_clientes_edit', {'id': cliente.id}) : path('app_clientes_new'),
+    'attr': {'novalidate': 'novalidate'}
+}) }}
+    {% if not form.vars.valid %}
+        <div class="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+            {{ form_errors(form) }}
+            {% if form.vars.errors|length == 0 %}No se pudo guardar. Revisa los campos marcados.{% endif %}
+        </div>
+    {% endif %}
+    <div class="space-y-4 px-5 py-4">
+        <div class="grid grid-cols-2 gap-3">
+            {{ form_row(form.first_name) }}
+            {{ form_row(form.last_name) }}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            {{ form_row(form.document_number, {'attr': {'inputmode': 'numeric', 'placeholder': 'Sin puntos'}}) }}
+            {{ form_row(form.phone, {'attr': {'inputmode': 'tel'}}) }}
+        </div>
+        {{ form_row(form.address) }}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" data-action="remote-dialog#close" class="btn-secondary btn-sm">Cancelar</button>
+        <button type="submit" class="btn-primary btn-sm">Guardar</button>
+    </div>
+{{ form_end(form) }}

@@ -1,0 +1,273 @@
+{% extends 'layout.html.twig' %}
+{% form_theme form 'form/tailwind_theme.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+
+{% set esNuevo = vehiculo.id is null %}
+
+{% block title %}{{ esNuevo ? 'Nuevo vehiculo' : 'Editar vehiculo' }} - Atilio Automotores{% endblock %}
+{% block page_title %}{{ esNuevo ? 'Nuevo vehiculo' : 'Editar vehiculo' }}{% endblock %}
+{% block page_subtitle %}
+    {% if not esNuevo %}
+        <p class="text-xs text-muted">
+            #{{ vehiculo.id }} - {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}
+        </p>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_vehiculos_index') }}" class="btn-secondary btn-sm">Cancelar</a>
+    <button type="submit" form="formVehiculo" class="btn-primary btn-sm">Guardar</button>
+{% endblock %}
+
+{% block body %}
+<div data-controller="quick-create" data-action="combobox:create->quick-create#open">
+    {{ form_start(form, {'attr': {'id': 'formVehiculo', 'enctype': 'multipart/form-data', 'novalidate': 'novalidate'}}) }}
+
+    {% if not form.vars.valid %}
+        <div class="mb-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+            {{ icons.icon('alert', 'size-5 shrink-0') }}
+            <span>Hay campos con errores. Revisalos abajo.</span>
+        </div>
+    {% endif %}
+
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+
+        {# ================= Columna principal ================= #}
+        <div class="space-y-5">
+
+            {# ---- Identificacion ---- #}
+            <section class="card p-5">
+                <h2 class="section-title mb-4">Identificacion</h2>
+
+                <div class="mb-4">
+                    {{ form_row(form.version) }}
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div data-controller="zero-km" class="sm:col-span-2 lg:col-span-2 grid grid-cols-2 gap-4">
+                        <div>
+                            {{ form_row(form.anio, {'attr': {'min': 1900, 'max': 2100, 'inputmode': 'numeric'}}) }}
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between">
+                                {{ form_label(form.plateNumber) }}
+                                <label class="mb-1.5 flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted">
+                                    <input type="checkbox" data-zero-km-target="checkbox" data-action="zero-km#toggle"
+                                           class="size-3.5 rounded border-line accent-[var(--app-accent)]">
+                                    0 km
+                                </label>
+                            </div>
+                            {{ form_widget(form.plateNumber, {'attr': {
+                                'data-zero-km-target': 'plate',
+                                'placeholder': 'AB123CD',
+                                'class': 'uppercase tracking-widest',
+                                'pattern': '([A-Za-z]{3}[0-9]{3}|[A-Za-z]{2}[0-9]{3}[A-Za-z]{2}|[0-9]{3}[A-Za-z]{3}|[A-Za-z][0-9]{3}[A-Za-z]{3})',
+                                'title': 'Autos: ABC123 o AB123CD. Motos: 123ABC o A123BCD.'
+                            }}) }}
+                            {{ form_errors(form.plateNumber) }}
+                        </div>
+                    </div>
+
+                    {{ form_row(form.color, {'attr': {'list': 'lista-colores', 'placeholder': 'Blanco'}}) }}
+                    <datalist id="lista-colores">
+                        {% for color in ['Blanco','Negro','Gris','Plateado','Rojo','Azul','Verde','Amarillo','Naranja','Marron','Bordo','Violeta'] %}
+                            <option value="{{ color }}">
+                        {% endfor %}
+                    </datalist>
+
+                    {{ form_row(form.kilometers, {'attr': {'placeholder': '0', 'min': 0, 'inputmode': 'numeric'}}) }}
+                    {{ form_row(form.chassis_number, {'attr': {'placeholder': 'VIN'}}) }}
+                    {{ form_row(form.engine_number, {}) }}
+                </div>
+            </section>
+
+            {# ---- Origen ---- #}
+            <section class="card p-5">
+                <h2 class="section-title mb-4">Origen</h2>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {{ form_row(form.supplier) }}
+                    {{ form_row(form.entry_date) }}
+                    <div class="sm:col-span-2">{{ form_row(form.purchaseDocumentFile) }}</div>
+                </div>
+            </section>
+
+            {# ---- Precios ---- #}
+            <section class="card p-5">
+                <div class="mb-4 flex items-baseline justify-between gap-3">
+                    <h2 class="section-title">Precios</h2>
+                    <p class="hint">1 USD = $ {{ exchange_rate|number_format(2, ',', '.') }}</p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2"
+                     data-controller="price-converter"
+                     data-price-converter-rate-value="{{ exchange_rate }}">
+                    {{ form_row(form.purchasePriceUsd, {'attr': {
+                        'data-price-converter-target': 'purchaseUsd',
+                        'data-action': 'input->price-converter#purchaseUsdChanged',
+                        'inputmode': 'decimal', 'placeholder': '0'
+                    }}) }}
+                    {{ form_row(form.purchase_price, {'attr': {'data-price-converter-target': 'purchaseArs', 'inputmode': 'decimal', 'placeholder': '0'}}) }}
+                    {{ form_row(form.suggestedRetailPriceUsd, {'attr': {
+                        'data-price-converter-target': 'retailUsd',
+                        'data-action': 'input->price-converter#retailUsdChanged',
+                        'inputmode': 'decimal', 'placeholder': '0'
+                    }}) }}
+                    {{ form_row(form.suggested_retail_price, {'attr': {'data-price-converter-target': 'retailArs', 'inputmode': 'decimal', 'placeholder': '0'}}) }}
+                </div>
+                <p class="hint mt-3">
+                    Cargá el importe en dólares y el de pesos se completa solo. Dejalos vacíos si todavía no
+                    hay precio: cargar cero deja el vehículo fuera de los totales del panel.
+                </p>
+            </section>
+
+            {# ---- Notas y fotos ---- #}
+            <section class="card p-5">
+                <h2 class="section-title mb-4">Notas y fotos</h2>
+                {{ form_row(form.internal_observations, {'attr': {'rows': 3, 'placeholder': 'Documentación, deudas, detalles de carrocería...'}}) }}
+
+                <div class="mt-4" data-controller="collection">
+                    <ul class="space-y-2" data-collection-target="container"
+                        data-collection-prototype-value="{{ form_widget(form.imagenesVehiculos.vars.prototype)|e('html_attr') }}"
+                        data-collection-index-value="{{ form.imagenesVehiculos|length }}">
+                        {% for imagenForm in form.imagenesVehiculos %}
+                            <li class="flex items-center gap-2">
+                                <div class="flex-1">{{ form_widget(imagenForm.imageFile) }}</div>
+                                <button type="button" data-action="collection#remove" class="btn-ghost btn-icon text-red-600">
+                                    {{ icons.icon('trash', 'size-4') }}
+                                </button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <button type="button" data-action="collection#add" class="btn-secondary btn-sm mt-2">
+                        {{ icons.icon('plus', 'size-4') }} Agregar foto
+                    </button>
+                    {# La coleccion se dibuja a mano arriba: sin esto, form_end la
+                       vuelve a renderizar al final, fuera de esta seccion. #}
+                    {% do form.imagenesVehiculos.setRendered %}
+                </div>
+            </section>
+        </div>
+
+        {# ================= Columna lateral ================= #}
+        <div class="space-y-5 xl:sticky xl:top-20 xl:self-start">
+            <section class="card p-5">
+                <h2 class="section-title mb-4">Estado</h2>
+                {{ form_row(form.state) }}
+                <p class="hint mt-2">
+                    El estado cambia solo al reservar o vender. Tocalo a mano únicamente para corregir.
+                </p>
+            </section>
+
+            {% if not esNuevo %}
+                <section class="card p-5">
+                    <h2 class="section-title mb-4">Ficha</h2>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="field-label">Patente</dt>
+                            <dd class="field-value">
+                                {% if vehiculo.plateNumber %}<span class="plate">{{ vehiculo.plateNumber }}</span>
+                                {% else %}<span class="badge-accent">0 km</span>{% endif %}
+                            </dd>
+                        </div>
+                        {% if vehiculo.reserva %}
+                            <div>
+                                <dt class="field-label">Reserva</dt>
+                                <dd class="field-value">
+                                    {{ vehiculo.reserva.cliente.firstName }} {{ vehiculo.reserva.cliente.lastName }}
+                                    <span class="badge-sky ml-1">{{ vehiculo.reserva.status }}</span>
+                                </dd>
+                            </div>
+                        {% endif %}
+                        {% if vehiculo.venta %}
+                            <div>
+                                <dt class="field-label">Venta</dt>
+                                <dd class="field-value">
+                                    <a href="{{ path('app_ventas_show', {'id': vehiculo.venta.id}) }}" class="text-accent-text hover:underline">
+                                        {{ vehiculo.venta.receiptNumber }}
+                                    </a>
+                                </dd>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <dt class="field-label">Cargado</dt>
+                            <dd class="field-value">
+                                {{ vehiculo.createdAt ? vehiculo.createdAt|date('d/m/Y') : '-' }}
+                                {% if vehiculo.createdBy %}<span class="text-muted">por {{ vehiculo.createdBy.completeName }}</span>{% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+            {% endif %}
+
+            <div class="hidden gap-2 xl:flex">
+                <button type="submit" class="btn-primary flex-1">Guardar vehiculo</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5 flex justify-end gap-2 xl:hidden">
+        <a href="{{ path('app_vehiculos_index') }}" class="btn-secondary">Cancelar</a>
+        <button type="submit" class="btn-primary">Guardar vehiculo</button>
+    </div>
+
+    {{ form_end(form) }}
+
+    {# ---------- Altas rapidas: un solo dialogo, sin encadenar ---------- #}
+    <dialog data-quick-create-target="dialog" data-kind="version" class="modal max-w-sm">
+        <form action="{{ path('app_catalogo_version_rapida') }}" data-action="quick-create#submit">
+            <div class="modal-header">
+                <h3 class="font-semibold">Cargar en el catalogo</h3>
+                <p class="hint mt-0.5">Marca, modelo y version en un solo paso. Si ya existen, se reutilizan.</p>
+            </div>
+            <div class="space-y-3 px-5 py-4">
+                <div>
+                    <label class="label">Marca</label>
+                    <input name="marca" required class="input" placeholder="Volkswagen">
+                </div>
+                <div>
+                    <label class="label">Modelo</label>
+                    <input name="modelo" required class="input" placeholder="Amarok">
+                </div>
+                <div>
+                    <label class="label">Version <span class="text-subtle">(opcional)</span></label>
+                    <input name="version" class="input" placeholder="Highline 3.0 V6 4x4">
+                </div>
+                <p data-error class="hidden rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-action="quick-create#close" class="btn-secondary btn-sm">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm">Crear y seleccionar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog data-quick-create-target="dialog" data-kind="proveedor" class="modal max-w-md">
+        <form action="{{ path('app_catalogo_proveedor_rapido') }}" data-action="quick-create#submit">
+            <div class="modal-header">
+                <h3 class="font-semibold">Nuevo proveedor</h3>
+            </div>
+            <div class="space-y-3 px-5 py-4">
+                <div>
+                    <label class="label">Nombre</label>
+                    <input name="name" required class="input" placeholder="Nombre o razon social">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">Telefono</label>
+                        <input name="phone" class="input">
+                    </div>
+                    <div>
+                        <label class="label">CUIT / DNI</label>
+                        <input name="documentNumber" class="input">
+                    </div>
+                </div>
+                <p data-error class="hidden rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-action="quick-create#close" class="btn-secondary btn-sm">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm">Crear y seleccionar</button>
+            </div>
+        </form>
+    </dialog>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{# Theme de formularios para las pantallas nuevas (Tailwind). Se aplica por template con {% form_theme %}. #}
+{% use "form_div_layout.html.twig" %}
+
+{%- block form_row -%}
+    <div class="{{ row_attr.class|default('') }}">
+        {{- form_label(form) -}}
+        {{- form_widget(form) -}}
+        {{- form_help(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock form_row -%}
+
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- if label is empty -%}
+            {%- set label = name|humanize -%}
+        {%- endif -%}
+        <label class="label" {% if id is defined %}for="{{ id }}"{% endif %}>
+            {{- label|trans(label_translation_parameters, translation_domain) -}}
+            {%- if required %}<span class="text-red-500"> *</span>{% endif -%}
+        </label>
+    {%- endif -%}
+{%- endblock form_label -%}
+
+{%- block form_widget_simple -%}
+    {%- if type|default('text') == 'file' -%}
+        {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200')|trim}) -%}
+    {%- else -%}
+        {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' input')|trim}) -%}
+    {%- endif -%}
+    {{- parent() -}}
+{%- endblock form_widget_simple -%}
+
+{%- block textarea_widget -%}
+    {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' input')|trim}) -%}
+    {{- parent() -}}
+{%- endblock textarea_widget -%}
+
+{%- block choice_widget_collapsed -%}
+    {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' input')|trim}) -%}
+    {{- parent() -}}
+{%- endblock choice_widget_collapsed -%}
+
+{%- block money_widget -%}
+    <div class="relative">
+        {%- if money_pattern starts with '{{' -%}
+            {{- block('form_widget_simple') -}}
+        {%- else -%}
+            {%- set prefix = money_pattern|split('{{')|first|trim -%}
+            {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' pl-12')|trim}) -%}
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-slate-500">{{ prefix }}</span>
+            {{- block('form_widget_simple') -}}
+        {%- endif -%}
+    </div>
+{%- endblock money_widget -%}
+
+{%- block checkbox_widget -%}
+    {%- set attr = attr|merge({'class': (attr.class|default('') ~ ' size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500')|trim}) -%}
+    {{- parent() -}}
+{%- endblock checkbox_widget -%}
+
+{# Selector con busqueda server-side (EntitySearchType) #}
+{%- block entity_search_widget -%}
+    <div data-controller="combobox"
+         data-kind="{{ kind }}"
+         data-combobox-url-value="{{ search_url }}"
+         data-combobox-placeholder-value="{{ placeholder }}"
+         data-combobox-label-value="{{ selected_label|default('') }}"
+         {% if create_label %}data-combobox-create-label-value="{{ create_label }}"{% endif %}>
+        <input type="hidden" {{ block('widget_attributes') }} value="{{ value }}" data-combobox-target="input">
+    </div>
+{%- endblock entity_search_widget -%}
+
+{%- block form_help -%}
+    {%- if help is not empty -%}
+        <p class="mt-1 text-xs text-slate-500">{{ help|trans({}, translation_domain)|raw }}</p>
+    {%- endif -%}
+{%- endblock form_help -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <div class="mt-1 space-y-0.5" data-field-error="{{ name }}">
+            {%- for error in errors -%}
+                <p class="text-xs text-red-600">{{ error.message }}</p>
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endblock form_errors -%}

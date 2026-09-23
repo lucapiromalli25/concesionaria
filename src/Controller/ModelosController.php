@@ -4,29 +4,45 @@ namespace App\Controller;
 
 use App\Entity\Modelos;
 use App\Form\ModelosType;
+use App\Repository\MarcasRepository;
 use App\Repository\ModelosRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormInterface; // <-- Añade este import
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/modelos')]
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('catalogo.ver')]
 class ModelosController extends AbstractController
 {
     #[Route('/', name: 'app_modelos_index', methods: ['GET'])]
-    public function index(ModelosRepository $modelosRepository): Response
+    public function index(Request $request, ModelosRepository $modelosRepository, MarcasRepository $marcasRepository): Response
     {
+        $q       = trim((string) $request->query->get('q')) ?: null;
+        $marcaId = $request->query->getInt('marca') ?: null;
+
+        $perPage    = 25;
+        $total      = $modelosRepository->countSearch($q, $marcaId);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+
         return $this->render('modelos/index.html.twig', [
-            'modelos' => $modelosRepository->findAll(),
+            'q'           => $q,
+            'marcaId'     => $marcaId,
+            'marcas'      => $marcasRepository->findBy([], ['name' => 'ASC']),
+            'filas'       => $modelosRepository->searchWithUsage($q, $marcaId, $page, $perPage),
+            'duplicados'  => $modelosRepository->duplicatedNames(),
+            'total'       => $total,
+            'currentPage' => $page,
+            'totalPages'  => $totalPages,
         ]);
     }
 
     #[Route('/new', name: 'app_modelos_new', methods: ['GET', 'POST'])]
+    #[IsGranted('catalogo.crear')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $modelo = new Modelos();
@@ -42,25 +58,17 @@ class ModelosController extends AbstractController
             $entityManager->persist($modelo);
             $entityManager->flush();
 
-            if ($request->isXmlHttpRequest()) {
-                return $this->getSuccessJsonResponse($modelo, 'Modelo creado correctamente.');
-            }
             return $this->redirectToRoute('app_modelos_index', [], Response::HTTP_SEE_OTHER);
         }
 
-        // --- BLOQUE AÑADIDO ---
-        if ($form->isSubmitted() && !$form->isValid() && $request->isXmlHttpRequest()) {
-            return new JsonResponse(['status' => 'error', 'message' => 'El formulario contiene errores.', 'errors' => $this->getFormErrors($form)], Response::HTTP_BAD_REQUEST);
-        }
-        // --- FIN DEL BLOQUE AÑADIDO ---
-
-        return $this->render('modelos/_form_modal.html.twig', [
+        return $this->render('modelos/_form.html.twig', [
             'modelo' => $modelo,
             'form' => $form->createView(),
         ]);
     }
 
     #[Route('/{id}/edit', name: 'app_modelos_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('catalogo.editar')]
     public function edit(Request $request, Modelos $modelo, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(ModelosType::class, $modelo);
@@ -71,54 +79,12 @@ class ModelosController extends AbstractController
             $modelo->setUpdatedAt(new \DateTimeImmutable());
             $entityManager->flush();
 
-            if ($request->isXmlHttpRequest()) {
-                return $this->getSuccessJsonResponse($modelo, 'Modelo actualizado correctamente.');
-            }
             return $this->redirectToRoute('app_modelos_index', [], Response::HTTP_SEE_OTHER);
         }
 
-        // --- BLOQUE AÑADIDO ---
-        if ($form->isSubmitted() && !$form->isValid() && $request->isXmlHttpRequest()) {
-            return new JsonResponse(['status' => 'error', 'message' => 'El formulario contiene errores.', 'errors' => $this->getFormErrors($form)], Response::HTTP_BAD_REQUEST);
-        }
-        // --- FIN DEL BLOQUE AÑADIDO ---
-
-        return $this->render('modelos/_form_modal.html.twig', [
+        return $this->render('modelos/_form.html.twig', [
             'modelo' => $modelo,
             'form' => $form->createView(),
         ]);
     }
-    
-    // --- MÉTODO AUXILIAR AÑADIDO ---
-    private function getFormErrors(FormInterface $form): array
-    {
-        $errors = [];
-        foreach ($form->getErrors(true) as $error) {
-            $errors[$error->getOrigin()->getName()][] = $error->getMessage();
-        }
-        foreach ($form as $child) {
-            if (!$child->isValid()) {
-                foreach ($child->getErrors(true) as $error) {
-                    $errors[$child->getName()][] = $error->getMessage();
-                }
-            }
-        }
-        return $errors;
-    }
-    
-    // --- MÉTODO AUXILIAR ACTUALIZADO ---
-    private function getSuccessJsonResponse(Modelos $modelo, string $message): JsonResponse
-{
-    return new JsonResponse([
-        'status' => 'success',
-        'message' => $message,
-        'modelo' => [
-            'id' => $modelo->getId(),
-            'name' => $modelo->getName(),
-            'marca' => ['name' => $modelo->getMarca()->getName()],
-            // AÑADE ESTA LÍNEA
-            'displayText' => $modelo->getMarca()->getName() . ' - ' . $modelo->getName()
-        ]
-    ]);
-}
 }

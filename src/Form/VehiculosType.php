@@ -16,36 +16,44 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use App\Entity\Proveedores;
-use Vich\UploaderBundle\Form\Type\VichFileType; 
+use App\Form\Type\EntitySearchType;
+use Vich\UploaderBundle\Form\Type\VichFileType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Bundle\SecurityBundle\Security;
+use App\Enum\VehicleStatus;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class VehiculosType extends AbstractType
 {
-    private $security;
-
-    public function __construct(Security $security)
+    public function __construct(private UrlGeneratorInterface $urlGenerator)
     {
-        $this->security = $security;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('version', EntityType::class, [
-                'label' => 'Versión del Vehículo',
+            ->add('version', EntitySearchType::class, [
+                'label' => 'Marca, modelo y versión',
                 'class' => Versiones::class,
-                'choice_label' => fn(Versiones $v) => "{$v->getModelo()->getMarca()->getName()} - {$v->getModelo()->getName()} - {$v->getName()}",
-                'group_by' => fn(Versiones $v) => $v->getModelo()->getMarca()->getName() . ' / ' . $v->getModelo()->getName(),
-                'placeholder' => 'Seleccione una versión',
+                'choice_label' => fn(Versiones $v) => trim(sprintf(
+                    '%s %s %s',
+                    $v->getModelo()->getMarca()->getName(),
+                    $v->getModelo()->getName(),
+                    $v->getName() ?? ''
+                )),
+                'search_url' => $this->urlGenerator->generate('app_catalogo_buscar_versiones'),
+                'placeholder' => 'Buscar en el catálogo...',
+                'create_label' => 'Cargar un modelo que no está en el catálogo',
+                'kind' => 'version',
             ])
-            ->add('supplier', EntityType::class, [
+            ->add('supplier', EntitySearchType::class, [
                 'class' => Proveedores::class,
-                'label' => 'Comprado a (Proveedor)',
-                'choice_label' => 'name',
-                'placeholder' => 'Seleccione un proveedor',
+                'label' => 'Comprado a',
+                'choice_label' => fn(Proveedores $p) => $p->getName(),
+                'search_url' => $this->urlGenerator->generate('app_catalogo_buscar_proveedores'),
+                'placeholder' => 'Buscar proveedor...',
+                'create_label' => 'Cargar proveedor nuevo',
+                'kind' => 'proveedor',
                 'required' => false,
-                'attr' => ['class' => 'form-select'] // Para que Select2 lo tome
             ])
             ->add('anio', NumberType::class, [
                 'label' => 'Año',
@@ -67,12 +75,7 @@ class VehiculosType extends AbstractType
             ])
             ->add('state', ChoiceType::class, [
                 'label' => 'Estado',
-                'choices' => [
-                    'En Stock' => 'En Stock',
-                    'Reservado' => 'Reservado',
-                    'Vendido' => 'Vendido',
-                    'En Mantenimiento' => 'En Mantenimiento',
-                ],
+                'choices' => VehicleStatus::choices(),
                 'placeholder' => 'Seleccione un estado',
             ])
             ->add('entry_date', DateType::class, [
@@ -101,24 +104,24 @@ class VehiculosType extends AbstractType
                 'delete_label' => 'Eliminar documento actual',
                 'download_uri' => false,
             ])
+            ->add('purchasePriceUsd', MoneyType::class, [
+                'label' => 'Compra en dólares',
+                'currency' => 'USD',
+                'required' => false,
+            ])
             ->add('purchase_price', MoneyType::class, [
-                'label' => 'Precio de Compra',
+                'label' => 'Compra en pesos',
+                'currency' => 'ARS',
+                'required' => false,
+            ])
+            ->add('suggestedRetailPriceUsd', MoneyType::class, [
+                'label' => 'Venta sugerida en dólares',
                 'currency' => 'USD',
                 'required' => false,
             ])
             ->add('suggested_retail_price', MoneyType::class, [
-                'label' => 'Precio Venta (Sugerido)',
-                'currency' => 'USD',
-                'required' => false,
-            ])
-            ->add('purchasePriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
-                'label' => 'Precio de Compra (USD)',
-                'currency' => 'USD',
-                'required' => false,
-            ])
-            ->add('suggestedRetailPriceUsd', MoneyType::class, [ // <-- CAMPO AÑADIDO
-                'label' => 'Precio Venta (Sugerido, USD)',
-                'currency' => 'USD',
+                'label' => 'Venta sugerida en pesos',
+                'currency' => 'ARS',
                 'required' => false,
             ]);
             

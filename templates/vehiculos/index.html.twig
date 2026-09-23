@@ -1,387 +1,225 @@
-{% extends 'base.html.twig' %}
-{% block title %}Gestión de Vehículos{% endblock %}
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/table.html.twig' as tbl %}
 
-{% block body %}
-<div class="page-header"><h3 class="fw-bold mb-3">Inventario de Vehículos</h3></div>
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex align-items-center">
-                    <h4 class="card-title">Listado de Vehículos</h4>
-                    <a href="{{ path('app_download_document', {'filename': 'BOLETTO.docx'}) }}" class="btn btn-info btn-round ms-auto me-2">
-                        <i class="fas fa-file-word"></i>
-                        Descargar Boleto
-                    </a>
-                    {# --- BOTÓN AÑADIDO --- #}
-                    <a href="{{ path('app_report_export_vehicles') }}" class="btn btn-secondary btn-round ms-auto me-2">
-                        <i class="fas fa-file-excel"></i>
-                        Exportar a Excel
-                    </a>
-
-                    {% if is_granted('ROLE_MANAGER') %}
-                        <button id="btn-nuevo-vehiculo" class="btn btn-primary btn-round">
-                            <i class="fa fa-plus"></i> Agregar Vehículo
-                        </button>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table id="tabla-vehiculos" class="display table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Vehículo</th>
-                                <th>Patente</th>
-                                <th>Año</th>
-                                <th>Color</th>
-                                <th>Precio Venta</th>
-                                <th>Observaciones</th>
-                                <th>Estado</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tfoot>
-                            <tr>
-                                <th>ID</th>
-                                <th>Vehículo</th>
-                                <th>Patente</th>
-                                <th>Año</th>
-                                <th>Color</th>
-                                <th>Precio Venta</th>
-                                <th>Observaciones</th>
-                                <th>Estado</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </tfoot>
-                        <tbody>
-                        {% for vehiculo in vehiculos %}
-                            <tr data-id="{{ vehiculo.id }}">
-                                <td>{{ vehiculo.id }}</td>
-                                <td class="vehiculo-desc">
-                                    <span class="fw-bold">{{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</span><br>
-                                    <small>{{ vehiculo.version.name }}</small>
-                                </td>
-                                <td class="vehiculo-plate">{{ vehiculo.plateNumber }}</td>
-                                <td class="vehiculo-ano">{{ vehiculo.anio }}</td>
-                                <td class="vehiculo-color">{{ vehiculo.color }}</td>
-                                <td class="vehiculo-precio">${{ vehiculo.suggestedRetailPrice|number_format(2, ',', '.') }}</td>
-                                <td class="vehiculo-observations">{{ vehiculo.internalObservations }}</td>
-                                <td>
-                                    {% if vehiculo.state == 'Vendido' %}<span class="badge bg-success">Vendido</span>
-                                    {% elseif vehiculo.state == 'Reservado' %}<span class="badge bg-warning text-dark">Reservado</span>
-                                    {% else %}<span class="badge bg-info">En Stock</span>{% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Acciones</button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}">Ver Detalles</a></li>
-                                            <li><button class="dropdown-item btn-editar">Editar</button></li>
-                                            {% if vehiculo.state == 'Reservado' and vehiculo.reserva is not null %}
-                                                <hr class="dropdown-divider">
-                                                <li>
-                                                    <a class="dropdown-item text-primary" href="{{ path('app_reservas_view_pdf', {'id': vehiculo.reserva.id}) }}" target="_blank">
-                                                        <i class="fas fa-file-pdf me-1"></i> Ver Recibo Reserva
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                            {% if vehiculo.state in ['En Stock', 'Reservado'] %}<hr class="dropdown-divider">{% endif %}
-                                            {% if vehiculo.state == 'En Stock' %}<li><a class="dropdown-item" href="{{ path('app_reservas_new', {'id': vehiculo.id}) }}">Reservar</a></li>{% endif %}
-                                            {% if vehiculo.state in ['En Stock', 'Reservado'] %}<li><a class="dropdown-item" href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}">Vender</a></li>{% endif %}
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% else %}
-                            {# DataTables manejará la fila vacía, pero la dejamos por si acaso #}
-                            <tr id="fila-sin-vehiculos"><td colspan="8" class="text-center">No se encontraron vehículos</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="formModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="modal-body-content"></div></div></div></div>
-
-<div class="modal fade" id="nestedFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="nestedFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="nested-modal-body-content"></div></div></div></div>
-
-<div class="modal fade" id="superNestedFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="superNestedFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="super-nested-modal-body-content"></div></div></div></div>
-
-<div class="modal fade" id="ultraNestedFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="ultraNestedFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="ultra-nested-modal-body-content"></div></div></div></div>
-
-<div class="modal fade" id="supplierFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="supplierFormModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="supplier-modal-body-content"></div></div></div></div>
+{% block title %}Inventario - Atilio Automotores{% endblock %}
+{% block page_title %}Inventario{% endblock %}
+{% block page_subtitle %}
+    <p class="text-sm text-muted">{{ total }} vehiculo{{ total == 1 ? '' : 's' }}{% if filters.q or filters.estado or filters.marca or filters.anioMin or filters.anioMax %} que coinciden con el filtro{% endif %}</p>
 {% endblock %}
 
-{% block javascripts %}
-    {{ parent() }}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- INICIALIZACIÓN DE MODALES ---
-        const mainModalEl = document.getElementById('formModal');
-        const formModal = new bootstrap.Modal(mainModalEl);
-        const modalBody = document.getElementById('modal-body-content');
-        const modalTitle = document.getElementById('formModalLabel');
-        
-        const nestedModalEl = document.getElementById('nestedFormModal');
-        const nestedFormModal = new bootstrap.Modal(nestedModalEl);
-        const nestedModalBody = document.getElementById('nested-modal-body-content');
-        const nestedModalTitle = document.getElementById('nestedFormModalLabel');
+{% block page_actions %}
+    {% if is_granted('reportes.exportar') %}
+        <a href="{{ path('app_report_export_vehicles') }}" class="btn-secondary btn-sm">
+            {{ icons.icon('excel', 'size-4') }}<span class="hidden sm:inline">Exportar</span>
+        </a>
+    {% endif %}
+    {% if is_granted('vehiculos.crear') %}
+        <a href="{{ path('app_vehiculos_new') }}" class="btn-primary btn-sm">
+            {{ icons.icon('plus', 'size-4') }}<span class="hidden sm:inline">Agregar vehiculo</span>
+        </a>
+    {% endif %}
+{% endblock %}
 
-        const superNestedModalEl = document.getElementById('superNestedFormModal');
-        const superNestedFormModal = new bootstrap.Modal(superNestedModalEl);
-        const superNestedModalBody = document.getElementById('super-nested-modal-body-content');
-        const superNestedModalTitle = document.getElementById('superNestedFormModalLabel');
-        
-        const supplierModalEl = document.getElementById('supplierFormModal');
-        const supplierFormModal = new bootstrap.Modal(supplierModalEl);
-        const supplierModalBody = document.getElementById('supplier-modal-body-content');
-        const supplierModalTitle = document.getElementById('supplierFormModalLabel');
-        
-        const ultraNestedModalEl = document.getElementById('ultraNestedFormModal');
-        const ultraNestedFormModal = new bootstrap.Modal(ultraNestedModalEl);
-        const ultraNestedModalBody = document.getElementById('ultra-nested-modal-body-content');
-        const ultraNestedModalTitle = document.getElementById('ultraNestedFormModalLabel');
+{% block body %}
+    {# ---------- Resumen por estado ---------- #}
+    <div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {% set tarjetas = [
+            { label: 'En stock',  value: counts['En Stock']|default(0),  estado: 'En Stock',  ring: 'ring-1 ring-emerald-500/25', dot: 'bg-emerald-500' },
+            { label: 'Reservados',value: counts['Reservado']|default(0), estado: 'Reservado', ring: 'ring-1 ring-sky-500/25',   dot: 'bg-sky-500' },
+            { label: 'Vendidos',  value: counts['Vendido']|default(0),   estado: 'Vendido',   ring: 'ring-1 ring-line',   dot: 'bg-stone-400' },
+            { label: 'Total',     value: counts|reduce((c, v) => c + v, 0), estado: '',       ring: 'ring-1 ring-accent/30',   dot: 'bg-accent' }
+        ] %}
+        {% for t in tarjetas %}
+            <a href="{{ path('app_vehiculos_index', app.request.query.all|merge({'estado': t.estado, 'page': 1})) }}"
+               class="card flex items-center gap-3 px-4 py-3 ring-1 {{ t.ring }} transition hover:shadow-md
+                      {{ filters.estado == t.estado and t.estado ? 'ring-2' : '' }}">
+                <span class="size-2.5 shrink-0 rounded-full {{ t.dot }}"></span>
+                <div class="min-w-0">
+                    <p class="text-xl font-semibold text-fg">{{ t.value }}</p>
+                    <p class="truncate text-xs text-muted">{{ t.label }}</p>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
 
-        // --- LÓGICA PARA ATENUAR MODALES ---
-        nestedModalEl.addEventListener('show.bs.modal', () => mainModalEl.classList.add('modal-underlay'));
-        nestedModalEl.addEventListener('hidden.bs.modal', () => mainModalEl.classList.remove('modal-underlay'));
-        superNestedModalEl.addEventListener('show.bs.modal', () => nestedModalEl.classList.add('modal-underlay'));
-        superNestedModalEl.addEventListener('hidden.bs.modal', () => nestedModalEl.classList.remove('modal-underlay'));
-        supplierModalEl.addEventListener('show.bs.modal', () => mainModalEl.classList.add('modal-underlay'));
-        supplierModalEl.addEventListener('hidden.bs.modal', () => mainModalEl.classList.remove('modal-underlay'));
-        ultraNestedModalEl.addEventListener('show.bs.modal', () => superNestedModalEl.classList.add('modal-underlay'));
-        ultraNestedModalEl.addEventListener('hidden.bs.modal', () => superNestedModalEl.classList.remove('modal-underlay'));
+    <turbo-frame id="inventario" data-turbo-action="advance" class="block">
+        <div class="card overflow-hidden">
 
+            {# ---------- Filtros ---------- #}
+            <form method="get" action="{{ path('app_vehiculos_index') }}"
+                  data-controller="filter-form" data-action="input->filter-form#submit change->filter-form#submitNow"
+                  class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
+                <div class="relative min-w-64 flex-1">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
+                        {{ icons.icon('search', 'size-4') }}
+                    </span>
+                    <input type="search" name="q" value="{{ filters.q }}" autocomplete="off"
+                           placeholder="Buscar por patente, marca, modelo, chasis, motor o color"
+                           class="input pl-9">
+                </div>
 
-        function initializeSelect2(selector) {
-            $(selector).select2({ dropdownParent: $(selector).closest('.modal') });
-        }
-        const checkbox0km = document.getElementById('vehiculo-0km');
+                <div>
+                    <select name="estado" class="input w-40">
+                        <option value="">Todos los estados</option>
+                        {% for estado in estados %}
+                            <option value="{{ estado }}" {{ filters.estado == estado ? 'selected' }}>{{ estado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-        
-        // --- MANEJO DE APERTURA DE MODALES ---
-        function openMainModal(url, title) {
-             modalTitle.textContent = title;
-             fetch(url)
-                .then(r => r.text()).then(html => {
-                    modalBody.innerHTML = html;
-                    
-                    initializeSelect2('#formModal .form-select');
-                    initializeImageCollection();
-                    initializeCheckbox0km();
-                    formModal.show();
-                    attachFormSubmitListener();
-                });
-        }
+                <div>
+                    <select name="marca" class="input w-44">
+                        <option value="">Todas las marcas</option>
+                        {% for marca in marcas %}
+                            <option value="{{ marca.id }}" {{ filters.marca == marca.id ? 'selected' }}>{{ marca.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-        const newVehicleButton = document.getElementById('btn-nuevo-vehiculo');
-        if (newVehicleButton) {
-            newVehicleButton.addEventListener('click', () => openMainModal('{{ path('app_vehiculos_new') }}', 'Nuevo Vehículo'));
-        }
-        
-        $('#tabla-vehiculos tbody').on('click', '.btn-editar', function() {
-            const row = $(this).closest('tr');
-            const vehiculoId = row.data('id');
-            const url = `{{ path('app_vehiculos_edit', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', vehiculoId);
-            openMainModal(url, `Editar Vehículo #${vehiculoId}`);
-        });
+                <div class="flex items-end gap-1.5">
+                    <input type="number" name="anioMin" value="{{ filters.anioMin }}" placeholder="Año desde" class="input w-28" min="1900" max="2100">
+                    <span class="pb-2 text-subtle">-</span>
+                    <input type="number" name="anioMax" value="{{ filters.anioMax }}" placeholder="hasta" class="input w-28" min="1900" max="2100">
+                </div>
 
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('action') === 'new') {
-            newVehicleButton?.click();
-        }
-        
-        modalBody.addEventListener('click', function(e) {
-            
-            if (e.target.closest('#btn-add-nested-version')) {
-                nestedModalTitle.textContent = 'Nueva Versión';
-                fetch('{{ path('app_versiones_new') }}').then(r => r.text()).then(html => {
-                    nestedModalBody.innerHTML = html;
-                    initializeSelect2('#nestedFormModal .form-select');
-                    nestedFormModal.show();
-                    attachNestedFormSubmitListener();
-                });
-            }
-            if (e.target.closest('#btn-add-nested-proveedor')) {
-                supplierModalTitle.textContent = 'Nuevo Proveedor';
-                fetch('{{ path('app_proveedores_new') }}').then(r => r.text()).then(html => {
-                    supplierModalBody.innerHTML = html;
-                    supplierFormModal.show();
-                    attachSupplierFormSubmitListener();
-                });
-            }
-        });
-        
-        nestedModalBody.addEventListener('click', function(e) {
-            if (e.target.closest('#btn-add-nested-modelo')) {
-                superNestedModalTitle.textContent = 'Nuevo Modelo';
-                fetch('{{ path('app_modelos_new') }}').then(r => r.text()).then(html => {
-                    superNestedModalBody.innerHTML = html;
-                    initializeSelect2('#superNestedFormModal .form-select');
-                    superNestedFormModal.show();
-                    attachSuperNestedFormSubmitListener();
-                });
-            }
-        });
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <input type="hidden" name="perPage" value="{{ perPage }}">
 
-        superNestedModalBody.addEventListener('click', function(e) {
-            if (e.target.closest('#btn-add-nested-marca')) {
-                ultraNestedModalTitle.textContent = 'Nueva Marca';
-                fetch('{{ path('app_marca_new') }}').then(r => r.text()).then(html => {
-                    ultraNestedModalBody.innerHTML = html;
-                    ultraNestedFormModal.show();
-                    attachUltraNestedFormSubmitListener();
-                });
-            }
-        });
+                <noscript><button type="submit" class="btn-primary">Filtrar</button></noscript>
 
-        // --- MANEJO DE COLECCIÓN DE IMÁGENES ---
-        function initializeImageCollection() {
-            const addBtn = document.getElementById('btn-add-imagen');
-            const collectionHolder = document.getElementById('imagenes-collection');
-            if (!addBtn || !collectionHolder) return;
-            const addRemoveButton = (item) => {
-                const removeButton = document.createElement('button');
-                removeButton.type = 'button';
-                removeButton.className = 'btn btn-danger btn-sm btn-remove-imagen';
-                removeButton.innerHTML = '<i class="fa fa-trash"></i>';
-                const formGroup = item.querySelector('.form-group');
-                if (formGroup) {
-                    formGroup.classList.add('input-group');
-                    formGroup.appendChild(removeButton);
-                }
-            };
-            collectionHolder.querySelectorAll('li').forEach(row => addRemoveButton(row));
-            addBtn.addEventListener('click', function() {
-                let index = collectionHolder.dataset.index;
-                const newForm = collectionHolder.dataset.prototype.replace(/__name__/g, index);
-                collectionHolder.dataset.index = ++index;
-                const newFormLi = document.createElement('li');
-                newFormLi.classList.add('mb-2');
-                newFormLi.innerHTML = newForm;
-                collectionHolder.appendChild(newFormLi);
-                addRemoveButton(newFormLi);
-            });
-            collectionHolder.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-remove-imagen')) {
-                    e.target.closest('li').remove();
-                }
-            });
-        }
-        
-        // --- LÓGICA GENÉRICA DE SUBMIT DE FORMULARIO ---
-        function handleFormSubmit(form, onSuccess, modalToHide) {
-            if (!form) return;
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = form.querySelector('button[type="submit"]');
-                const spinner = btn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                btn.disabled = true;
-                form.querySelectorAll('.form-error-message').forEach(el => el.innerHTML = '');
+                {% if filters.q or filters.estado or filters.marca or filters.anioMin or filters.anioMax %}
+                    <a href="{{ path('app_vehiculos_index') }}" class="btn-ghost btn-sm">
+                        {{ icons.icon('x', 'size-4') }} Limpiar
+                    </a>
+                {% endif %}
+            </form>
 
-                fetch(form.action, { method: 'POST', body: new FormData(form), headers: {'X-Requested-With': 'XMLHttpRequest'} })
-                .then(response => { if (!response.ok) { return response.json().then(err => Promise.reject(err)); } return response.json(); })
-                .then(data => {
-                    if (data.status === 'success') {
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        onSuccess(data);
-                        if (modalToHide) {
-                            modalToHide.hide();
-                        }
-                    } else {
-                        if(data.errors) {
-                            Object.keys(data.errors).forEach(fieldName => {
-                                const container = form.querySelector(`[data-field-error="${fieldName}"]`);
-                                if (container) { container.innerHTML = `<p class="mb-0">${data.errors[fieldName].join(', ')}</p>`; }
-                            });
-                            $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error de Validación', message: 'Por favor, corrija los errores.'},{type: 'danger'});
-                        } else {
-                            $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
-                        }
-                    }
-                })
-                .catch(errorData => {
-                    $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: 'Ocurrió un error inesperado.'},{type: 'danger'});
-                })
-                .finally(() => { spinner.classList.add('d-none'); btn.disabled = false; });
-            });
-        }
+            {# ---------- Tabla ---------- #}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            {{ tbl.sortable('ID', 'id', sort, dir, 'app_vehiculos_index') }}
+                            <th>Vehiculo</th>
+                            <th>Patente</th>
+                            {{ tbl.sortable('Año', 'anio', sort, dir, 'app_vehiculos_index') }}
+                            <th>Color</th>
+                            {{ tbl.sortable('Precio', 'precio', sort, dir, 'app_vehiculos_index', 'right') }}
+                            {{ tbl.sortable('Estado', 'estado', sort, dir, 'app_vehiculos_index') }}
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for vehiculo in vehiculos %}
+                        <tr>
+                            <td class="text-xs text-subtle">#{{ vehiculo.id }}</td>
+                            <td>
+                                <a href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}" class="font-medium text-fg hover:text-accent-text">
+                                    {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}
+                                </a>
+                                {% if vehiculo.version.name %}
+                                    <p class="text-xs text-muted">{{ vehiculo.version.name }}</p>
+                                {% endif %}
+                                {% if vehiculo.internalObservations %}
+                                    <p class="mt-0.5 max-w-md truncate text-xs text-subtle" title="{{ vehiculo.internalObservations }}">
+                                        {{ vehiculo.internalObservations }}
+                                    </p>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if vehiculo.plateNumber %}
+                                    <span class="plate">{{ vehiculo.plateNumber }}</span>
+                                {% else %}
+                                    <span class="badge-blue">0 km</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ vehiculo.anio }}</td>
+                            <td class="text-muted">{{ vehiculo.color }}</td>
+                            <td class="text-right whitespace-nowrap">
+                                {% set precioUsd = vehiculo.suggestedRetailPriceUsd|default(0) + 0 %}
+                                {% set precioArs = vehiculo.suggestedRetailPrice|default(0) + 0 %}
+                                {% if precioUsd > 0 %}
+                                    <p class="font-semibold text-fg">USD {{ precioUsd|number_format(0, ',', '.') }}</p>
+                                {% endif %}
+                                {% if precioArs > 0 %}
+                                    <p class="{{ precioUsd > 0 ? 'text-xs text-muted' : 'font-semibold text-fg' }}">$ {{ precioArs|number_format(0, ',', '.') }}</p>
+                                {% endif %}
+                                {% if precioUsd <= 0 and precioArs <= 0 %}
+                                    <span class="badge-sky">sin precio</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set tone = {'Vendido': 'badge-slate', 'Reservado': 'badge-sky', 'En Stock': 'badge-green'}[vehiculo.state]|default('badge-blue') %}
+                                <span class="{{ tone }}">{{ vehiculo.state }}</span>
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-end gap-1">
+                                    {% if vehiculo.state == 'En Stock' %}
+                                        <a href="{{ path('app_reservas_new', {'id': vehiculo.id}) }}" class="btn-secondary btn-sm" data-turbo="false">Reservar</a>
+                                    {% endif %}
+                                    {% if vehiculo.state in ['En Stock', 'Reservado'] %}
+                                        <a href="{{ path('app_ventas_new', {'id': vehiculo.id}) }}" class="btn-primary btn-sm" data-turbo="false">Vender</a>
+                                    {% endif %}
+                                    {% if vehiculo.state == 'Reservado' and vehiculo.reserva %}
+                                        <a href="{{ path('app_reservas_view_pdf', {'id': vehiculo.reserva.id}) }}" target="_blank"
+                                           title="Ver recibo de reserva" class="btn-ghost btn-sm">{{ icons.icon('document', 'size-4') }}</a>
+                                    {% endif %}
+                                    <a href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}" title="Ver detalle"
+                                       class="btn-ghost btn-sm" data-turbo="false">{{ icons.icon('eye', 'size-4') }}</a>
+                                    <a href="{{ path('app_vehiculos_edit', {'id': vehiculo.id}) }}" title="Editar"
+                                       class="btn-ghost btn-sm" data-turbo="false">{{ icons.icon('pencil', 'size-4') }}</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="py-16 text-center">
+                                <div class="mx-auto flex max-w-sm flex-col items-center gap-2 text-subtle">
+                                    {{ icons.icon('search', 'size-8') }}
+                                    <p class="text-sm font-medium text-muted">No se encontraron vehiculos</p>
+                                    <p class="text-xs">Proba con otra busqueda o limpia los filtros.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-        // --- ASIGNACIÓN DE LISTENERS A CADA FORMULARIO ---
-        function attachFormSubmitListener() {
-            handleFormSubmit(document.getElementById('formVehiculo'), (data) => {
-                window.location.reload();
-            }, formModal);
-        }
-        
-        function attachNestedFormSubmitListener() {
-            handleFormSubmit(document.getElementById('formVersion'), (data) => {
-                const v = data.version;
-                const newOption = new Option(v.displayText, v.id, true, true);
-                $('#formVehiculo select[name="vehiculos[version]"]').append(newOption).trigger('change');
-            }, nestedFormModal);
-        }
-        
-        function attachSuperNestedFormSubmitListener() {
-            handleFormSubmit(document.getElementById('formModelo'), (data) => {
-                const newModel = data.modelo;
-                const newOption = new Option(newModel.displayText, newModel.id, true, true);
-                $('#nestedFormModal select[name="versiones[modelo]"]').append(newOption).trigger('change');
-            }, superNestedFormModal);
-        }
-        
-        function attachSupplierFormSubmitListener() {
-            handleFormSubmit(document.getElementById('formProveedor'), (data) => {
-                const newSupplier = data.proveedor;
-                const newOption = new Option(newSupplier.displayText, newSupplier.id, true, true);
-                $('#formVehiculo select[name="vehiculos[supplier]"]').append(newOption).trigger('change');
-            }, supplierFormModal);
-        }
+            {# ---------- Paginacion ---------- #}
+            {% if total > 0 %}
+                {% set from = (currentPage - 1) * perPage + 1 %}
+                {% set to = min(currentPage * perPage, total) %}
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-4 py-3">
+                    <p class="text-xs text-muted">
+                        Mostrando <span class="font-medium text-fg">{{ from }}-{{ to }}</span> de
+                        <span class="font-medium text-fg">{{ total }}</span>
+                    </p>
 
-        function attachUltraNestedFormSubmitListener() {
-            handleFormSubmit(document.getElementById('formMarca'), (data) => {
-                const newBrand = data.marca;
-                const newOption = new Option(newBrand.displayText, newBrand.id, true, true);
-                $('#superNestedFormModal select[name="modelos[marca]"]').append(newOption).trigger('change');
-            }, ultraNestedFormModal);
-        }
-        
-        // --- INICIALIZACIÓN DE DATATABLES ---
-        $('#tabla-vehiculos').DataTable({
-            "pageLength": 10,
-            "language": { "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json", "emptyTable": "No se encontraron vehículos" },
-            "order": [[ 0, "desc" ]]
-        });
-    });
+                    <div class="flex items-center gap-1">
+                        <a href="{{ path('app_vehiculos_index', app.request.query.all|merge({'page': currentPage - 1})) }}"
+                           class="btn-ghost btn-sm {{ currentPage == 1 ? 'pointer-events-none opacity-40' : '' }}">
+                            {{ icons.icon('chevron-left', 'size-4') }}
+                        </a>
 
-    function initializeCheckbox0km() {
-        const checkbox0km = document.getElementById('vehiculo-0km');
-        const plateInput = document.getElementById('vehiculos_plateNumber'); // Ajusta si el id es distinto
+                        {% for p in 1..totalPages %}
+                            {% if p == 1 or p == totalPages or (p >= currentPage - 1 and p <= currentPage + 1) %}
+                                <a href="{{ path('app_vehiculos_index', app.request.query.all|merge({'page': p})) }}"
+                                   class="btn-sm {{ p == currentPage ? 'btn-primary' : 'btn-ghost' }} min-w-8">{{ p }}</a>
+                            {% elseif p == 2 or p == totalPages - 1 %}
+                                <span class="px-1 text-subtle">...</span>
+                            {% endif %}
+                        {% endfor %}
 
-        if (!checkbox0km || !plateInput) return;
-
-        // Estado inicial
-        plateInput.disabled = checkbox0km.checked;
-        if (checkbox0km.checked) {
-            plateInput.removeAttribute('required');
-        }
-
-        checkbox0km.addEventListener('change', function () {
-            if (this.checked) {
-                plateInput.value = '';
-                plateInput.removeAttribute('required');
-                plateInput.disabled = true;
-            } else {
-                plateInput.setAttribute('required', 'required');
-                plateInput.disabled = false;
-            }
-        });
-    }
-    </script>
+                        <a href="{{ path('app_vehiculos_index', app.request.query.all|merge({'page': currentPage + 1})) }}"
+                           class="btn-ghost btn-sm {{ currentPage == totalPages ? 'pointer-events-none opacity-40' : '' }}">
+                            {{ icons.icon('chevron-right', 'size-4') }}
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </turbo-frame>
 {% endblock %}

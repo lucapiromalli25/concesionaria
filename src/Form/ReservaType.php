@@ -4,7 +4,8 @@ namespace App\Form;
 
 use App\Entity\Clientes;
 use App\Entity\Reservas;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use App\Form\Type\EntitySearchType;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -15,15 +16,21 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ReservaType extends AbstractType
 {
+    public function __construct(private UrlGeneratorInterface $urlGenerator)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('cliente', EntityType::class, [
+            ->add('cliente', EntitySearchType::class, [
                 'class' => Clientes::class,
                 'label' => 'Cliente',
-                'choice_label' => fn(Clientes $c) => "{$c->getFirstName()} {$c->getLastName()} (DNI: {$c->getDocumentNumber()})",
-                'placeholder' => 'Buscar cliente...',
-                'attr' => ['class' => 'form-select']
+                'choice_label' => fn(Clientes $c) => "{$c->getFirstName()} {$c->getLastName()} (DNI {$c->getDocumentNumber()})",
+                'search_url' => $this->urlGenerator->generate('app_catalogo_buscar_clientes'),
+                'placeholder' => 'Buscar por nombre o DNI...',
+                'create_label' => 'Cargar cliente nuevo',
+                'kind' => 'cliente',
             ])
             ->add('reservationDate', DateType::class, [
                 'label' => 'Fecha de Reserva',
@@ -48,26 +55,26 @@ class ReservaType extends AbstractType
                 'widget' => 'single_text',
                 'required' => false
             ])
-            ->add('status', ChoiceType::class, [
-                'label' => 'Estado',
-                'choices' => [
-                    'Activa' => 'Activa',
-                    'Vencida' => 'Vencida',
-                    'Cancelada' => 'Cancelada',
-                ],
-                'attr' => ['class' => 'form-select']
-            ])
             ->add('observations', TextareaType::class, [
                 'label' => 'Observaciones',
                 'required' => false,
                 'attr' => ['rows' => 3]
             ]);
+
+        if ($options['is_edit']) {
+            $builder->add('status', ChoiceType::class, [
+                'label' => 'Estado',
+                'choices' => ['Activa' => 'Activa', 'Vencida' => 'Vencida', 'Cancelada' => 'Cancelada'],
+                'attr' => ['class' => 'form-select']
+            ]);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => Reservas::class,
+            'is_edit'    => false,
         ]);
     }
 }

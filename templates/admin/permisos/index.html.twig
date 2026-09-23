@@ -1,0 +1,110 @@
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+
+{% set editable = is_granted('roles.administrar') %}
+
+{% block title %}Permisos - Atilio Automotores{% endblock %}
+{% block page_title %}Matriz de permisos{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">
+        Que puede hacer cada rol. {{ porModulo|length }} modulos, {{ roles|length }} rol{{ roles|length == 1 ? '' : 'es' }} editable{{ roles|length == 1 ? '' : 's' }}.
+    </p>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_roles_index') }}" class="btn-secondary btn-sm">Volver a roles</a>
+    {% if editable %}
+        <button type="submit" form="formPermisos" class="btn-primary btn-sm">Guardar cambios</button>
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+{% if roles is empty %}
+    <div class="card p-8 text-center">
+        <p class="text-sm text-muted">No hay roles para configurar todavia.</p>
+        <a href="{{ path('app_roles_index') }}" class="btn-primary btn-sm mt-4">Crear un rol</a>
+    </div>
+{% else %}
+<form method="post" action="{{ path('app_permisos_guardar') }}" id="formPermisos" data-controller="matriz-permisos">
+    <input type="hidden" name="_token" value="{{ csrf_token('permisos') }}">
+
+    <div class="card overflow-hidden">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th class="min-w-72">Funcionalidad</th>
+                        {% if admin %}
+                            <th class="w-28 text-center">
+                                <span class="block">{{ admin.nombre }}</span>
+                                <span class="block text-[10px] font-normal normal-case text-subtle">de sistema</span>
+                            </th>
+                        {% endif %}
+                        {% for rol in roles %}
+                            <th class="w-28 text-center">
+                                <span class="block">{{ rol.nombre }}</span>
+                                {% if editable %}
+                                    <button type="button" class="mt-0.5 text-[10px] font-normal normal-case text-accent-text hover:underline"
+                                            data-action="matriz-permisos#alternarColumna"
+                                            data-rol="{{ rol.id }}">todos / ninguno</button>
+                                {% endif %}
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                {% for modulo, funcionalidades in porModulo %}
+                    <tr class="bg-surface-2">
+                        <th colspan="{{ roles|length + (admin ? 2 : 1) }}" class="text-left">
+                            {{ modulo }}
+                        </th>
+                    </tr>
+                    {% for funcionalidad in funcionalidades %}
+                        <tr>
+                            <td>
+                                <p class="font-medium">{{ funcionalidad.nombre }}</p>
+                                <p class="text-xs text-subtle">
+                                    {{ funcionalidad.clave }}{% if funcionalidad.descripcion %} - {{ funcionalidad.descripcion }}{% endif %}
+                                </p>
+                            </td>
+                            {% if admin %}
+                                <td class="text-center">
+                                    <input type="checkbox" checked disabled
+                                           title="El rol de sistema tiene todos los permisos"
+                                           class="size-4 rounded border-line accent-[var(--app-accent)] opacity-50">
+                                </td>
+                            {% endif %}
+                            {% for rol in roles %}
+                                <td class="text-center">
+                                    <input type="checkbox"
+                                           name="permisos[{{ rol.id }}][]"
+                                           value="{{ funcionalidad.id }}"
+                                           data-rol="{{ rol.id }}"
+                                           {{ marcados[rol.id][funcionalidad.clave] is defined ? 'checked' }}
+                                           {{ editable ? '' : 'disabled' }}
+                                           class="size-4 cursor-pointer rounded border-line accent-[var(--app-accent)]">
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if editable %}
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-4 py-3">
+                <p class="text-xs text-muted">Los cambios se aplican en cuanto guardas, sin necesidad de volver a entrar.</p>
+                <button type="submit" class="btn-primary btn-sm">Guardar cambios</button>
+            </div>
+        {% endif %}
+    </div>
+</form>
+
+<p class="hint mt-3">
+    Las funcionalidades salen de <span class="font-medium">config/permisos.php</span> y se cargan con
+    <span class="font-medium">app:permisos:sincronizar</span>. Aca solo se define quien tiene cada una:
+    una clave que el codigo no chequea no haria nada.
+</p>
+{% endif %}
+{% endblock %}

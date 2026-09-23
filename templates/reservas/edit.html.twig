@@ -1,0 +1,19 @@
+{% extends 'layout.html.twig' %}
+{% set vehiculo = reserva.vehiculo %}
+
+{% block title %}Editar reserva {{ reserva.receiptNumber }} - Atilio Automotores{% endblock %}
+{% block page_title %}Editar reserva{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">{{ reserva.receiptNumber|default('#' ~ reserva.id) }} - {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}</p>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_reservas_view_pdf', {'id': reserva.id}) }}" target="_blank" class="btn-secondary btn-sm">Recibo</a>
+{% endblock %}
+
+{% block body %}
+    {% include 'reservas/_form.html.twig' with {
+        'cancelPath': path('app_reservas_index'),
+        'submitLabel': 'Guardar cambios'
+    } %}
+{% endblock %}

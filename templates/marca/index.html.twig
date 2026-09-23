@@ -1,205 +1,106 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
 
-{% block title %}Gestión de Marcas{% endblock %}
-
-{% block body %}
-<div class="page-header">
-    <h3 class="fw-bold mb-3">Gestión de Marcas</h3>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex align-items-center">
-                    <h4 class="card-title">Listado de Marcas</h4>
-                    <button id="btn-nueva-marca" class="btn btn-primary btn-round ms-auto">
-                        <i class="fa fa-plus"></i>
-                        Agregar Marca
-                    </button>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover" id="tabla-marcas">
-                        <thead>
-                            <tr>
-                                <th>Id</th>
-                                <th>name</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for marca in marcas %}
-                            <tr data-id="{{ marca.id }}">
-                                <td>{{ marca.id }}</td>
-                                <td>{{ marca.name }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-warning btn-sm btn-editar">Editar</button>
-                                    {# aca iria el boton de eliminar #}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="3" class="text-center">No se encontraron marcas</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="formModalLabel">Nueva Marca</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modal-body-content">
-        </div>
-    </div>
-  </div>
-</div>
+{% block title %}Marcas - Atilio Automotores{% endblock %}
+{% block page_title %}Marcas{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">{{ filas|length }} marca{{ filas|length == 1 ? '' : 's' }}</p>
 {% endblock %}
 
-{% block javascripts %}
-    {{ parent() }} {# Hereda los scripts de base.html.twig #}
+{% block page_actions %}
+    {% if is_granted('catalogo.crear') %}
+        <button type="button" class="btn-primary btn-sm"
+                data-action="remote-dialog#open"
+                data-dialog-url="{{ path('app_marca_new') }}"
+                data-dialog-title="Nueva marca">
+            {{ icons.icon('plus', 'size-4') }}<span class="hidden sm:inline">Nueva marca</span>
+        </button>
+    {% endif %}
+{% endblock %}
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const formModal = new bootstrap.Modal(document.getElementById('formModal'));
-        const modalBody = document.getElementById('modal-body-content');
-        const modalTitle = document.getElementById('formModalLabel');
-        const tablaMarcasBody = document.querySelector('#tabla-marcas tbody');
+{% block body %}
+<div>
+    <turbo-frame id="marcas" data-turbo-action="advance" class="block">
+        <div class="card overflow-hidden">
+            <form method="get" action="{{ path('app_marca_index') }}"
+                  data-controller="filter-form" data-action="input->filter-form#submit"
+                  class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
+                <div class="relative min-w-64 flex-1">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
+                        {{ icons.icon('search', 'size-4') }}
+                    </span>
+                    <input type="search" name="q" value="{{ q }}" autocomplete="off"
+                           placeholder="Buscar marca" class="input pl-9">
+                </div>
+                <noscript><button type="submit" class="btn-primary">Buscar</button></noscript>
+                {% if q %}
+                    <a href="{{ path('app_marca_index') }}" class="btn-ghost btn-sm">{{ icons.icon('x', 'size-4') }} Limpiar</a>
+                {% endif %}
+            </form>
 
-        // ABRO MODAL PARA CREAR
-        document.getElementById('btn-nueva-marca').addEventListener('click', function() {
-            modalTitle.textContent = 'Nueva Marca';
-            // Cargar el formulario vacío en el modal
-            fetch('{{ path('app_marca_new') }}')
-                .then(response => response.text())
-                .then(html => {
-                    modalBody.innerHTML = html;
-                    formModal.show();
-                    attachFormSubmitListener();
-                });
-        });
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Marca</th>
+                            <th class="text-right">Modelos</th>
+                            <th class="text-right">Vehiculos cargados</th>
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for fila in filas %}
+                        {% set marca = fila[0] %}
+                        <tr>
+                            <td class="font-medium">{{ marca.name }}</td>
+                            <td class="mono text-right text-muted">{{ fila.modelos }}</td>
+                            <td class="text-right">
+                                {% if fila.vehiculos > 0 %}
+                                    <a href="{{ path('app_vehiculos_index', {'marca': marca.id}) }}"
+                                       class="badge-accent" data-turbo="false">{{ fila.vehiculos }}</a>
+                                {% else %}
+                                    <span class="text-xs text-subtle">sin uso</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-end gap-1">
+                                    <a href="{{ path('app_modelos_index', {'marca': marca.id}) }}" class="btn-ghost btn-sm"
+                                       data-turbo="false" title="Ver modelos">{{ icons.icon('tag', 'size-4') }}</a>
+                                    {% if is_granted('catalogo.editar') %}
+                                        <button type="button" class="btn-ghost btn-sm" title="Editar"
+                                                data-action="remote-dialog#open"
+                                                data-dialog-url="{{ path('app_marca_edit', {'id': marca.id}) }}"
+                                                data-dialog-title="Editar marca">
+                                            {{ icons.icon('pencil', 'size-4') }}
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="py-16 text-center">
+                                <div class="mx-auto flex max-w-sm flex-col items-center gap-2 text-subtle">
+                                    {{ icons.icon('tag', 'size-8') }}
+                                    <p class="text-sm font-medium text-muted">No se encontraron marcas</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </turbo-frame>
 
-        // ABRO MODAL PARA EDITAR (usando delegación de eventos)
-        tablaMarcasBody.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('btn-editar')) {
-                const row = e.target.closest('tr');
-                const marcaId = row.dataset.id;
-                
-                modalTitle.textContent = `Editar Marca #${marcaId}`;
-                const url = `{{ path('app_marca_edit', {'id': 'MARCA_ID'}) }}`.replace('MARCA_ID', marcaId);
-
-                // Cargo el formulario con los datos de la marca en el modal
-                fetch(url)
-                    .then(response => response.text())
-                    .then(html => {
-                        modalBody.innerHTML = html;
-                        formModal.show();
-                        attachFormSubmitListener();
-                    });
-            }
-        });
-
-        // ADJUNTAR LISTENER AL FORMULARIO DEL MODAL (Crea o Edita)
-        function attachFormSubmitListener() {
-            const form = document.getElementById('formMarca');
-            if (!form) return;
-
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const submitButton = form.querySelector('button[type="submit"]');
-                const spinner = submitButton.querySelector('.spinner-border');
-                
-                spinner.classList.remove('d-none');
-                submitButton.disabled = true;
-
-                const formData = new FormData(form);
-
-                fetch(form.action, { // la acción del form es /new o /{id}/edit
-                    method: 'POST',
-                    body: formData,
-                    headers: {'X-Requested-With': 'XMLHttpRequest'}
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        $.notify({
-                            icon: 'fas fa-check-circle',
-                            title: '¡Éxito!', message: data.message,
-                        },{ type: 'success' });
-                        
-                        const esEdicion = form.action.includes('/edit');
-
-                        if (esEdicion) {
-                            // Actualiza la fila existente
-                            const rowToUpdate = tablaMarcasBody.querySelector(`tr[data-id="${data.marca.id}"]`);
-                            if (rowToUpdate) {
-                                rowToUpdate.children[1].textContent = data.marca.name;
-                            }
-                        } else {
-                            // Añade nueva fila a la tabla
-                            const newRow = `
-                                <tr data-id="${data.marca.id}">
-                                    <td>${data.marca.id}</td>
-                                    <td>${data.marca.name}</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-warning btn-sm btn-editar">Editar</button>
-                                    </td>
-                                </tr>`;
-                            tablaMarcasBody.insertAdjacentHTML('beforeend', newRow);
-                        }
-                        
-                        formModal.hide();
-                    } else {
-                        //Ver si la notificacion la saco y muestro en el formulario o cierro el fomrulario y saco la notificacion
-                        $.notify({
-                            icon: 'fas fa-exclamation-triangle',
-                            title: 'Error de Validación',
-                            message: data.message,
-                        },{
-                            type: 'danger',
-                        });
-                        
-                        // Muestro errores en el formulario
-                        const form = document.getElementById('formMarca');
-                        const errorContainer = form.querySelector('.form-error-message');
-                        
-                        if (errorContainer) {
-                            // Limpio errores anteriores y mostramos los nuevos.
-                            errorContainer.innerHTML = ''; // Limpiamos
-                            if (data.errors && data.errors.length > 0) {
-                                // Inyecto el error que viene del backend.
-                                errorContainer.innerHTML = `<p class="mb-0">${data.errors[0]}</p>`;
-                            }
-                        }
-                    }
-                })
-                .catch(error => console.error('Error:', error))
-                .finally(() => {
-                    spinner.classList.add('d-none');
-                    submitButton.disabled = false;
-                });
-            });
-        }
-    });
-    $(document).ready(function() {
-        $('#tabla-marcas').DataTable({
-            "pageLength": 10,
-            "language": {
-                "url": "https://cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-            },
-            "order": [[ 0, "desc" ]]
-        });
-    });
-    </script>
+    <dialog data-remote-dialog-target="dialog" class="modal max-w-sm">
+        <div class="modal-header flex items-center justify-between">
+            <h3 class="font-semibold" data-remote-dialog-target="title"></h3>
+            <button type="button" data-action="remote-dialog#close" class="btn-ghost btn-icon">
+                {{ icons.icon('x', 'size-4') }}
+            </button>
+        </div>
+        <div data-remote-dialog-target="content"></div>
+    </dialog>
+</div>
 {% endblock %}

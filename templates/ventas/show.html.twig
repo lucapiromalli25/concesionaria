@@ -1,307 +1,266 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/format.html.twig' as fmt %}
 
-{% block title %}Detalle de Venta #{{ venta.id }}{% endblock %}
+{% set moneda = venta.saleCurrency|default('ARS') %}
+{% set cuotas = venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
+{% set pagadas = venta.cuotas|filter(c => c.status == 'Pagada')|length %}
 
-{% block body %}
-<div class="page-header">
-    <h3 class="fw-bold mb-3">Detalle de Venta</h3>
-    <ul class="breadcrumbs">
-        <li class="nav-home"><a href="{{ path('app_home') }}"><i class="icon-home"></i></a></li>
-        <li class="separator"><i class="icon-arrow-right"></i></li>
-        <li class="nav-item"><a href="{{ path('app_ventas_index') }}">Ventas</a></li>
-        <li class="separator"><i class="icon-arrow-right"></i></li>
-        <li class="nav-item"><a href="#">Venta #{{ venta.id }}</a></li>
-    </ul>
-</div>
-
-<div class="row">
-    {# --- DATOS PRINCIPALES DE LA VENTA --- #}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                     <h4 class="card-title mb-0">Información General</h4>
-                     {% if venta.receiptNumber %}
-                        <a href="{{ path('app_ventas_receipt', {'id': venta.id}) }}" target="_blank" class="btn btn-primary btn-sm">
-                            <i class="fas fa-print"></i> Imprimir Recibo General
-                        </a>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Vehículo:</strong> <a href="{{ path('app_vehiculos_show', {'id': venta.vehiculo.id}) }}">{{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}</a><br>
-                        <strong>Cliente:</strong> {{ venta.cliente.firstName }} {{ venta.cliente.lastName }} (DNI: {{ venta.cliente.documentNumber }})
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Fecha de Venta:</strong> {{ venta.saleDate|date('d/m/Y') }}<br>
-                        <strong>Vendedor:</strong> {{ venta.vendedor.completeName }}<br>
-                        {% if venta.saleDocumentName %}
-                            <strong>Boleto de Venta:</strong> 
-                            <a href="{{ vich_uploader_asset(venta, 'saleDocumentFile') }}" target="_blank" class="btn btn-info btn-sm">
-                                <i class="fas fa-eye"></i> Ver Documento
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# --- TABLA DE CUOTAS --- #}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                 <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0">Plan de Pagos</h4>
-                    {% if not venta.hasPayments() and is_granted('ROLE_PRICE') %}
-                        <button class="btn btn-warning btn-sm" id="btn-modificar-plan">
-                            <i class="fas fa-edit"></i> Modificar Plan
-                        </button>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th># Cuota</th>
-                            <th>Fecha Vencimiento</th>
-                            <th>Monto Original</th>
-                            <th>Monto Pagado</th>
-                            <th>Moneda</th>
-                            <th>Estado</th>
-                            <th>Fecha de Pago</th>
-                            <th class="text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for cuota in venta.cuotas|sort((a, b) => a.installmentNumber <=> b.installmentNumber) %}
-                        <tr>
-                            <td><strong>{{ cuota.installmentNumber }}</strong></td>
-                            <td>{{ cuota.dueDate|date('d/m/Y') }}</td>
-                            <td>${{ cuota.amount|number_format(2, ',', '.') }}</td>
-                            <td>$ {{cuota.paidAmount ? cuota.paidAmount|number_format(2, ',', '.') : '0,00' }}</td>
-                            <td>{{ cuota.paidCurrency ? cuota.paidCurrency : '-'}}</td>
-                            <td>
-                                {% if cuota.status == 'Pagada' %}
-                                    <span class="badge bg-success">Pagada</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y H:i') : 'N/A' }}</td>
-                            <td class="text-end">
-                                {% if cuota.status == 'Pendiente' %}
-                                    <button class="btn btn-success btn-sm btn-register-payment" data-cuota-id="{{ cuota.id }}">
-                                        Registrar Pago
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-danger btn-sm btn-cancel-payment" data-cuota-id="{{ cuota.id }}" data-token="{{ csrf_token('cancel-payment' ~ cuota.id) }}">
-                                        Cancelar Pago
-                                    </button>
-                                {% endif %}
-                                {% if cuota.receiptName %}
-                                    <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver Comprobante Subido">
-                                        <i class="fas fa-paperclip"></i> Comprobante
-                                    </a>
-                                {% endif %}
-                                {% if cuota.receiptNumber %}
-                                    <a href="{{ path('app_cuotas_receipt', {'id': cuota.id}) }}" target="_blank" class="btn btn-info btn-sm" title="Ver Recibo PDF">
-                                        <i class="fas fa-receipt"></i> Recibo
-                                    </a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center">Esta venta no tiene un plan de cuotas asociado.</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="paymentModalLabel"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="payment-modal-body-content"></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="modifyPlanModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modifyPlanModalLabel">Modificar Plan de Pagos</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="modify-plan-modal-body"></div>
-    </div>
-  </div>
-</div>
-
-
-<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmationModalLabel">Confirmar Acción</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="confirmationModalBody">
-        ¿Estás seguro de que deseas realizar esta acción?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirmar</button>
-      </div>
-    </div>
-  </div>
-</div>
+{% block title %}Venta {{ venta.receiptNumber|default('#' ~ venta.id) }} - Atilio Automotores{% endblock %}
+{% block page_title %}Venta {{ venta.receiptNumber|default('#' ~ venta.id) }}{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">
+        {{ venta.saleDate|date('d/m/Y') }} - {{ venta.cliente.firstName }} {{ venta.cliente.lastName }}
+    </p>
 {% endblock %}
 
-{% block javascripts %}
-    {{ parent() }}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- INICIALIZACIÓN DE MODALES ---
-        const paymentModalEl = document.getElementById('paymentModal');
-        const paymentModal = paymentModalEl ? new bootstrap.Modal(paymentModalEl) : null;
-        const paymentModalBody = document.getElementById('payment-modal-body-content');
-        const paymentModalTitle = document.getElementById('paymentModalLabel');
-        
-        const modifyPlanModalEl = document.getElementById('modifyPlanModal');
-        const modifyPlanModal = modifyPlanModalEl ? new bootstrap.Modal(modifyPlanModalEl) : null;
-        const modifyPlanModalBody = document.getElementById('modify-plan-modal-body');
+{% block page_actions %}
+    <a href="{{ path('app_ventas_index') }}" class="btn-secondary btn-sm">Volver</a>
+    {% if venta.receiptNumber %}
+        <a href="{{ path('app_ventas_receipt', {'id': venta.id}) }}" target="_blank" class="btn-secondary btn-sm">
+            {{ icons.icon('document', 'size-4') }} Recibo
+        </a>
+    {% endif %}
+{% endblock %}
 
-        const confirmationModalEl = document.getElementById('confirmationModal');
-        const confirmationModal = confirmationModalEl ? new bootstrap.Modal(confirmationModalEl) : null;
-        const confirmActionBtn = document.getElementById('confirmActionBtn');
-        const confirmationModalBody = document.getElementById('confirmationModalBody');
-        
-        const tablaBody = document.querySelector('tbody');
+{% block body %}
+<div data-controller="confirm-action">
+    <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
 
-        // --- MANEJO DE CLICS EN LA TABLA ---
-        if (tablaBody) {
-            tablaBody.addEventListener('click', function(e) {
-                const registerButton = e.target.closest('.btn-register-payment');
-                const cancelButton = e.target.closest('.btn-cancel-payment');
+        {# ================= Columna principal ================= #}
+        <div class="space-y-5">
 
-                // --- LÓGICA PARA REGISTRAR PAGO ---
-                if (registerButton) {
-                    const cuotaId = registerButton.dataset.cuotaId;
-                    paymentModalTitle.textContent = `Registrar Pago de Cuota #${cuotaId}`;
-                    const url = `{{ path('app_cuotas_register_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
-                    
-                    fetch(url).then(r => r.text()).then(html => {
-                        paymentModalBody.innerHTML = html;
-                        paymentModal.show();
-                        attachPaymentFormSubmitListener();
-                    });
-                }
+            {# ---- Resumen ---- #}
+            <section class="card p-5">
+                <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+                    <div>
+                        <p class="field-label">Precio de venta</p>
+                        <p class="mt-1 text-xl font-semibold">{{ fmt.money(venta.finalSalePrice, moneda, 0) }}</p>
+                    </div>
+                    {% if cuotas|length %}
+                        <div>
+                            <p class="field-label">Cobrado</p>
+                            <p class="mt-1 text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+                                {{ fmt.money(venta.getTotalPaid(), moneda, 0) }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="field-label">Saldo</p>
+                            <p class="mt-1 text-xl font-semibold text-red-600 dark:text-red-400">
+                                {{ fmt.money(venta.getPendingBalance(), moneda, 0) }}
+                            </p>
+                        </div>
+                        <div class="ml-auto text-right">
+                            <p class="field-label">Cuotas</p>
+                            <p class="mt-1 text-sm font-medium">{{ pagadas }} de {{ cuotas|length }} pagas</p>
+                            <div class="mt-1.5 h-1.5 w-32 overflow-hidden rounded-full" style="background-color: var(--app-line)">
+                                <div class="h-full rounded-full bg-emerald-500"
+                                     style="width: {{ cuotas|length ? (pagadas / cuotas|length * 100)|round : 0 }}%"></div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div>
+                            <p class="field-label">Forma de pago</p>
+                            <p class="mt-1 text-sm font-medium">{{ venta.paymentMethod|default('-') }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
 
-                // --- LÓGICA PARA CANCELAR PAGO (CON MODAL BOOTSTRAP) ---
-                if (cancelButton) {
-                    e.preventDefault();
-                    const cuotaId = cancelButton.dataset.cuotaId;
-                    const token = cancelButton.dataset.token;
-                    const url = `{{ path('app_cuotas_cancel_payment', {'id': 'ID_PLACEHOLDER'}) }}`.replace('ID_PLACEHOLDER', cuotaId);
+            {# ---- Plan de pagos ---- #}
+            {% if cuotas|length %}
+                <section class="card overflow-hidden">
+                    <div class="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
+                        <div>
+                            <h2 class="text-sm font-semibold">Plan de pagos</h2>
+                            <p class="hint mt-0.5">{{ venta.paymentMethod }} en {{ cuotas|length }} cuotas</p>
+                        </div>
+                        {% if not venta.hasPayments() and (is_granted('planes_pago.modificar')) %}
+                            <button type="button" class="btn-secondary btn-sm"
+                                    data-action="remote-dialog#open"
+                                    data-dialog-url="{{ path('app_plan_de_pagos_modificar', {'id': venta.id}) }}"
+                                    data-dialog-title="Modificar plan de pagos">
+                                Modificar plan
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Cuota</th>
+                                    <th>Vence</th>
+                                    <th class="text-right">Monto</th>
+                                    <th class="text-right">Pagado</th>
+                                    <th>Estado</th>
+                                    <th>Fecha de pago</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for cuota in cuotas %}
+                                <tr>
+                                    <td class="font-medium">{{ cuota.installmentNumber }}</td>
+                                    <td class="mono">{{ cuota.dueDate|date('d/m/Y') }}</td>
+                                    <td class="text-right">{{ fmt.money(cuota.amount, moneda) }}</td>
+                                    <td class="text-right">
+                                        {% if cuota.paidAmount %}
+                                            {{ fmt.money(cuota.paidAmount, cuota.paidCurrency|default(moneda)) }}
+                                        {% else %}
+                                            <span class="text-subtle">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ fmt.estadoCuota(cuota) }}</td>
+                                    <td class="mono text-muted">{{ cuota.paymentDate ? cuota.paymentDate|date('d/m/Y') : '-' }}</td>
+                                    <td>
+                                        <div class="flex items-center justify-end gap-1">
+                                            {% if cuota.status == 'Pendiente' %}
+                                                <button type="button" class="btn-primary btn-sm"
+                                                        data-action="remote-dialog#open"
+                                                        data-dialog-url="{{ path('app_cuotas_register_payment', {'id': cuota.id}) }}"
+                                                        data-dialog-title="Cobrar cuota {{ cuota.installmentNumber }}">
+                                                    Cobrar
+                                                </button>
+                                            {% else %}
+                                                {% if cuota.receiptNumber %}
+                                                    <a href="{{ path('app_cuotas_receipt', {'id': cuota.id}) }}" target="_blank"
+                                                       title="Recibo del pago" class="btn-ghost btn-sm">{{ icons.icon('document', 'size-4') }}</a>
+                                                {% endif %}
+                                                {% if cuota.receiptName %}
+                                                    <a href="{{ vich_uploader_asset(cuota, 'receiptFile') }}" target="_blank"
+                                                       title="Comprobante del cliente" class="btn-ghost btn-sm">{{ icons.icon('eye', 'size-4') }}</a>
+                                                {% endif %}
+                                                <button type="button" class="btn-ghost btn-sm text-red-600 dark:text-red-400"
+                                                        title="Anular el pago"
+                                                        data-action="confirm-action#ask"
+                                                        data-confirm-url="{{ path('app_cuotas_cancel_payment', {'id': cuota.id}) }}"
+                                                        data-confirm-token="{{ csrf_token('cancel-payment' ~ cuota.id) }}"
+                                                        data-confirm-label="Anular pago"
+                                                        data-confirm-message="La cuota vuelve a quedar pendiente y se borra el comprobante subido.">
+                                                    {{ icons.icon('x', 'size-4') }}
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            {% endif %}
 
-                    confirmationModalBody.textContent = "Esta acción anulará el pago. La cuota volverá a estar pendiente y el comprobante se eliminará. ¡No podrás revertir esto!";
-                    confirmActionBtn.dataset.url = url;
-                    confirmActionBtn.dataset.token = token;
-                    
-                    confirmationModal.show();
-                }
-            });
-        }
+            {# ---- Observaciones ---- #}
+            {% if venta.observations %}
+                <section class="card p-5">
+                    <h2 class="section-title mb-3">Observaciones</h2>
+                    <p class="text-sm whitespace-pre-line">{{ venta.observations }}</p>
+                </section>
+            {% endif %}
+        </div>
 
-        // --- EVENTO PARA EL BOTÓN DE CONFIRMACIÓN DEL MODAL ---
-        if (confirmActionBtn) {
-            confirmActionBtn.addEventListener('click', function() {
-                const url = this.dataset.url;
-                const token = this.dataset.token;
+        {# ================= Columna lateral ================= #}
+        <div class="space-y-5">
 
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Eliminando...';
+            {# ---- Vehiculo ---- #}
+            <section class="card overflow-hidden">
+                {% if venta.vehiculo.imagenesVehiculos is not empty %}
+                    <img src="{{ vich_uploader_asset(venta.vehiculo.imagenesVehiculos|first, 'imageFile') }}" alt=""
+                         class="aspect-video w-full bg-surface-2 object-cover">
+                {% endif %}
+                <div class="p-5">
+                    <h2 class="section-title mb-3">Vehiculo</h2>
+                    <a href="{{ path('app_vehiculos_show', {'id': venta.vehiculo.id}) }}"
+                       class="text-base font-semibold hover:text-accent-text">
+                        {{ venta.vehiculo.version.modelo.marca.name }} {{ venta.vehiculo.version.modelo.name }}
+                    </a>
+                    <div class="mt-3 flex items-center gap-3">
+                        {% if venta.vehiculo.plateNumber %}<span class="plate">{{ venta.vehiculo.plateNumber }}</span>{% endif %}
+                        <span class="mono text-sm text-muted">{{ venta.vehiculo.anio }}</span>
+                    </div>
+                </div>
+            </section>
 
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: new URLSearchParams({ 'token': token })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    confirmationModal.hide();
-                    if (data.status === 'success') {
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        setTimeout(() => { window.location.reload(); }, 1000);
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message},{type: 'danger'});
-                    }
-                })
-                .finally(() => {
-                    this.disabled = false;
-                    this.innerHTML = 'Confirmar';
-                });
-            });
-        }
+            {# ---- Datos ---- #}
+            <section class="card p-5">
+                <h2 class="section-title mb-4">Operacion</h2>
+                <dl class="space-y-3">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <dt class="field-label">Cliente</dt>
+                        <dd class="text-right text-sm font-medium">
+                            {{ venta.cliente.firstName }} {{ venta.cliente.lastName }}
+                            <span class="mono block text-xs text-subtle">DNI {{ venta.cliente.documentNumber }}</span>
+                        </dd>
+                    </div>
+                    {% if venta.cliente.phone %}
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="field-label">Telefono</dt>
+                            <dd class="mono text-sm">{{ venta.cliente.phone }}</dd>
+                        </div>
+                    {% endif %}
+                    <div class="flex items-baseline justify-between gap-3">
+                        <dt class="field-label">Vendedor</dt>
+                        <dd class="text-sm">{{ venta.vendedor ? venta.vendedor.completeName : '-' }}</dd>
+                    </div>
+                    <div class="flex items-baseline justify-between gap-3">
+                        <dt class="field-label">Fecha</dt>
+                        <dd class="mono text-sm">{{ venta.saleDate|date('d/m/Y') }}</dd>
+                    </div>
+                    <div class="flex items-baseline justify-between gap-3">
+                        <dt class="field-label">Forma de pago</dt>
+                        <dd class="text-sm">{{ venta.paymentMethod|default('-') }}</dd>
+                    </div>
+                </dl>
 
-        // --- SUBMIT DEL FORMULARIO DE PAGO ---
-        function attachPaymentFormSubmitListener() {
-            const form = document.getElementById('formPayment');
-            if (!form) return;
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = form.querySelector('button[type="submit"]');
-                const spinner = btn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                btn.disabled = true;
+                {% if venta.saleDocumentName and is_granted('ventas.ver_documentos') %}
+                    <a href="{{ vich_uploader_asset(venta, 'saleDocumentFile') }}" target="_blank" class="btn-secondary btn-sm mt-4 w-full">
+                        {{ icons.icon('document', 'size-4') }} Boleto de venta
+                    </a>
+                {% endif %}
+            </section>
 
-                fetch(form.action, { method: 'POST', body: new FormData(form), headers: {'X-Requested-with': 'XMLHttpRequest'} })
-                .then(r => r.json()).then(data => {
-                    if (data.status === 'success') {
-                        paymentModal.hide();
-                        $.notify({icon: 'fas fa-check-circle', title: '¡Éxito!', message: data.message},{type: 'success'});
-                        window.open(data.cuota.reciboUrl, '_blank');
-                        setTimeout(() => { window.location.reload(); }, 500);
-                    } else {
-                        $.notify({icon: 'fas fa-exclamation-triangle', title: 'Error', message: data.message || 'Ocurrió un error.'},{type: 'danger'});
-                    }
-                })
-                .finally(() => {
-                    spinner.classList.add('d-none');
-                    btn.disabled = false;
-                });
-            });
-        }
-        
-        // --- LÓGICA PARA MODIFICAR PLAN DE PAGOS ---
-        const btnModificarPlan = document.getElementById('btn-modificar-plan');
-        if (btnModificarPlan) {
-            btnModificarPlan.addEventListener('click', function() {
-                const url = '{{ path('app_plan_de_pagos_modificar', {'id': venta.id}) }}';
-                fetch(url)
-                    .then(r => r.text()).then(html => {
-                        if (modifyPlanModalBody) {
-                            modifyPlanModalBody.innerHTML = html;
-                        }
-                        if (modifyPlanModal) {
-                            modifyPlanModal.show();
-                        }
-                    });
-            });
-        }
-    });
-    </script>
+            {# ---- Zona peligrosa ---- #}
+            {% if not venta.hasPayments() and is_granted('ventas.eliminar') %}
+                <section class="card p-5">
+                    <h2 class="section-title mb-2">Anular</h2>
+                    <p class="hint mb-3">
+                        Se borra la venta con sus cuotas y el vehiculo vuelve a stock. Solo se puede mientras
+                        no haya cuotas cobradas.
+                    </p>
+                    <button type="button" class="btn-danger btn-sm w-full"
+                            data-action="confirm-action#ask"
+                            data-confirm-url="{{ path('app_ventas_delete', {'id': venta.id}) }}"
+                            data-confirm-token="{{ csrf_token('delete' ~ venta.id) }}"
+                            data-confirm-label="Eliminar venta"
+                            data-confirm-message="Se elimina la venta {{ venta.receiptNumber }} y sus cuotas. El vehiculo vuelve a estar En Stock.">
+                        Eliminar venta
+                    </button>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ---- Dialogo generico para formularios remotos ---- #}
+    <dialog data-remote-dialog-target="dialog" class="modal max-w-md">
+        <div class="modal-header flex items-center justify-between">
+            <h3 class="font-semibold" data-remote-dialog-target="title"></h3>
+            <button type="button" data-action="remote-dialog#close" class="btn-ghost btn-icon">
+                {{ icons.icon('x', 'size-4') }}
+            </button>
+        </div>
+        <div data-remote-dialog-target="content"></div>
+    </dialog>
+
+    {# ---- Dialogo de confirmacion ---- #}
+    <dialog data-confirm-action-target="dialog" class="modal max-w-sm">
+        <div class="px-5 py-4">
+            <h3 class="font-semibold">Confirmar</h3>
+            <p class="mt-1.5 text-sm text-muted" data-confirm-action-target="message"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" data-action="confirm-action#close" class="btn-secondary btn-sm">Cancelar</button>
+            <button type="button" data-action="confirm-action#confirm" data-confirm-action-target="submit" class="btn-danger btn-sm"></button>
+        </div>
+    </dialog>
+</div>
 {% endblock %}

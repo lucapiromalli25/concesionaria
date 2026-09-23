@@ -2,185 +2,132 @@
 
 namespace App\Controller;
 
+use App\Repository\CuotasRepository;
+use App\Repository\ReservasRepository;
 use App\Repository\VehiculosRepository;
 use App\Repository\VentasRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Repository\ReservasRepository;
-use App\Repository\CuotasRepository;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class HomeController extends AbstractController
 {
     #[Route('/home', name: 'app_home')]
     #[Route('/', name: 'app_root')]
-    #[IsGranted('ROLE_USER')]
-    public function index(CuotasRepository $cuotasRepo, VehiculosRepository $vehiculosRepo, VentasRepository $ventasRepo, ReservasRepository $reservasRepo, HttpClientInterface $httpClient): Response
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function index(
+        CuotasRepository $cuotasRepo,
+        VehiculosRepository $vehiculosRepo,
+        VentasRepository $ventasRepo,
+        ReservasRepository $reservasRepo,
+        HttpClientInterface $httpClient,
+        CacheInterface $cache,
+    ): Response {
+        // Sin permiso de panel no va un 403 pelado: al usuario le explicamos que le
+        // falta un rol. Los que quedaron sin rol en la migracion caen aca.
+        if (!$this->isGranted('dashboard.ver')) {
+            return $this->render('home/sin_permisos.html.twig');
+        }
+
+        $hoy = new \DateTimeImmutable('today');
+
+        // --- Stock ---
+        $porEstado = $vehiculosRepo->countByState();
+        $inventario = $vehiculosRepo->inventoryValue();
+
+        // --- Reservas activas ---
+        $reservasActivas = $reservasRepo->findBy(['status' => 'Activa'], ['expiration_date' => 'ASC']);
+        $reservasVencidas = array_filter(
+            $reservasActivas,
+            fn($r) => $r->getExpirationDate() && $r->getExpirationDate() < $hoy
+        );
+
+        // --- Cobranzas ---
+        $vencidas = $cuotasRepo->overdueSummary();
+        $proximas = $cuotasRepo->findUpcoming(7, 8);
+        $cuotasVencidas = $cuotasRepo->findOverdue(8);
+
+        // --- Ventas ---
+        $ventasPorMes = $this->armarSerieMensual($ventasRepo->getSalesByMonth());
+        $mesActual = $ventasPorMes[array_key_last($ventasPorMes)] ?? null;
+
+        return $this->render('home/index.html.twig', [
+            'porEstado'        => $porEstado,
+            'inventario'       => $inventario,
+            'reservasActivas'  => count($reservasActivas),
+            'reservasVencidas' => count($reservasVencidas),
+            'proximaReserva'   => $reservasActivas[0] ?? null,
+            'vencidas'         => $vencidas,
+            'cuotasVencidas'   => $cuotasVencidas,
+            'proximasCuotas'   => $proximas,
+            'ventasPorMes'     => $ventasPorMes,
+            'ventasMes'        => $mesActual,
+            'totalVendido'     => $ventasRepo->getTotalSalesValueByCurrency(),
+            'cobrado'          => $cuotasRepo->sumPaidInstallmentsByCurrency(),
+            'pendiente'        => $cuotasRepo->sumPendingInstallmentsByCurrency(),
+            'topMarcas'        => $ventasRepo->getTopSellingBrands(5),
+            'vendedores'       => $ventasRepo->findSalesCountAndAmountBySalesperson(5),
+            'ultimosIngresos'  => $vehiculosRepo->findLatestArrivals(5),
+            'ultimasVentas'    => $ventasRepo->findBy([], ['sale_date' => 'DESC'], 5),
+            'dolar'            => $this->cotizacionDolar($httpClient, $cache),
+        ]);
+    }
+
+    /**
+     * Completa los 12 meses (incluidos los sin ventas) y separa el monto por
+     * moneda, porque pesos y dolares no se suman entre si.
+     */
+    private function armarSerieMensual(array $filas): array
     {
-        // --- KPIs Principales ---
-        $totalVehiculos = $vehiculosRepo->countInStock();
-        $totalVehiculosVendidos = $vehiculosRepo->countVendidos();
-        $ventasMesActual = $ventasRepo->countSalesThisMonth();
-        $valorTotalInventario = $vehiculosRepo->sumInventoryValue();
-        $totalVendidoHistorico = $ventasRepo->getTotalSalesValue();
-
-        $ventasAlContado = $ventasRepo->getNonFinancedSalesValueByCurrency();
-        $cuotasPagadas = $cuotasRepo->sumPaidInstallmentsByCurrency();
-
-        $totalRecaudado = [
-            'ARS' => ($ventasAlContado['ARS'] ?? 0) + ($cuotasPagadas['ARS'] ?? 0),
-            'USD' => ($ventasAlContado['USD'] ?? 0) + ($cuotasPagadas['USD'] ?? 0),
-        ];
-
-        $deudaPendiente = $cuotasRepo->sumPendingInstallmentsByCurrency();
-
-        // --- Gráfico 1: Tendencia de Ventas (últimos 15 días) ---
-        $salesTrendData = $ventasRepo->getSalesTrend(15);
-        $trendLabels = [];
-        $trendData = [];
-        $dateRange = new \DatePeriod(new \DateTimeImmutable('-14 days midnight'), new \DateInterval('P1D'), new \DateTimeImmutable('+1 day'));
-        $dailySales = [];
-        foreach($dateRange as $date) {
-            $dailySales[$date->format('Y-m-d')] = 0;
-        }
-        foreach ($salesTrendData as $row) {
-            if (isset($dailySales[$row['sale_day']])) {
-                $dailySales[$row['sale_day']] = $row['count'];
-            }
-        }
-        foreach ($dailySales as $day => $count) {
-            $trendLabels[] = (new \DateTime($day))->format('d/m');
-            $trendData[] = $count;
-        }
-        $salesTrendChart = [
-            'labels' => $trendLabels,
-            'data' => $trendData
-        ];
-        
-        // --- Gráfico 2: Stock por Marca ---
-        $statsPorMarca = $vehiculosRepo->countVehiclesByBrand();
-        $marcaLabels = [];
-        $marcaData = [];
-        foreach ($statsPorMarca as $stat) {
-            $marcaLabels[] = $stat['name'];
-            $marcaData[] = $stat['vehicleCount'];
-        }
-        $vehiculosPorMarcaChart = [
-            'labels' => $marcaLabels,
-            'data' => $marcaData,
-        ];
-
-        // --- Gráfico 3: Ventas y Montos por Mes (últimos 12 meses) ---
-        $salesByMonthData = $ventasRepo->getSalesByMonth();
-        $salesByMonthChart = ['labels' => [], 'count_data' => [], 'amount_data' => []];
-        $months = [];
+        $meses = [];
         for ($i = 11; $i >= 0; $i--) {
-            $date = new \DateTimeImmutable("-{$i} months");
-            $months[$date->format('Y-m')] = ['count' => 0, 'amount' => 0];
+            $fecha = new \DateTimeImmutable("first day of -{$i} months");
+            $meses[$fecha->format('Y-m')] = [
+                'etiqueta' => $fecha->format('M'),
+                'periodo'  => $fecha->format('m/Y'),
+                'cantidad' => 0,
+                'montos'   => ['ARS' => 0.0, 'USD' => 0.0],
+            ];
         }
-        foreach ($salesByMonthData as $row) {
-            $key = $row['sales_year'] . '-' . str_pad($row['sales_month'], 2, '0', STR_PAD_LEFT);
-            if (isset($months[$key])) {
-                $months[$key]['count'] = $row['sales_count'];
-                $months[$key]['amount'] = $row['total_amount'];
+
+        foreach ($filas as $fila) {
+            $clave = sprintf('%04d-%02d', $fila['sales_year'], $fila['sales_month']);
+            if (!isset($meses[$clave])) {
+                continue;
             }
-        }
-        foreach ($months as $month => $values) {
-            $salesByMonthChart['labels'][] = (new \DateTimeImmutable($month . '-01'))->format('M Y');
-            $salesByMonthChart['count_data'][] = $values['count'];
-            $salesByMonthChart['amount_data'][] = $values['amount'];
+            $meses[$clave]['cantidad'] += (int) $fila['sales_count'];
+            $meses[$clave]['montos'][$fila['moneda'] ?: 'ARS'] += (float) $fila['total_amount'];
         }
 
-        // --- Feed de Actividad Reciente ---
-        $recentSales = $ventasRepo->findBy([], ['sale_date' => 'DESC'], 5);
-        $recentReservations = $reservasRepo->findBy([], ['reservation_date' => 'DESC'], 5);
-        $recentVehicles = $vehiculosRepo->findBy([], ['created_at' => 'DESC'], 5);
+        return $meses;
+    }
 
-        $activityFeed = [];
-        foreach ($recentSales as $sale) {
-            $activityFeed[] = [
-                'type' => 'Venta', 'date' => $sale->getSaleDate(), 'icon' => 'fa-dollar-sign', 'color' => 'success',
-                'text' => "Venta del {$sale->getVehiculo()->getVersion()->getModelo()->getMarca()->getName()} a {$sale->getCliente()->getFirstName()} {$sale->getCliente()->getLastName()}"
-            ];
-        }
-        foreach ($recentReservations as $reserva) {
-            $activityFeed[] = [
-                'type' => 'Reserva', 'date' => $reserva->getReservationDate(), 'icon' => 'fa-calendar-check', 'color' => 'warning',
-                'text' => "Reserva del {$reserva->getVehiculo()->getVersion()->getModelo()->getName()} por {$reserva->getCliente()->getFirstName()}"
-            ];
-        }
-        foreach ($recentVehicles as $vehicle) {
-            $activityFeed[] = [
-                'type' => 'Ingreso', 'date' => $vehicle->getCreatedAt(), 'icon' => 'fa-car', 'color' => 'info',
-                'text' => "Ingreso del {$vehicle->getVersion()->getModelo()->getMarca()->getName()} {$vehicle->getVersion()->getModelo()->getName()} {$vehicle->getVersion()->getName()}"
-            ];
-        }
+    /**
+     * Cotizacion del dolar cacheada 30 minutos: no tiene sentido pegarle a la
+     * API en cada carga del panel.
+     */
+    private function cotizacionDolar(HttpClientInterface $httpClient, CacheInterface $cache): array
+    {
+        return $cache->get('cotizacion_dolar', function (ItemInterface $item) use ($httpClient) {
+            $item->expiresAfter(1800);
 
-        usort($activityFeed, fn($a, $b) => $b['date'] <=> $a['date']);
-        $activityFeed = array_slice($activityFeed, 0, 7);
-
-        // --- Top Marcas Más Vendidas ---
-        $topSellingBrands = $ventasRepo->getTopSellingBrands(3);
-
-        // --- Top Vendedores del Mes ---
-        $topSalespersons = $ventasRepo->findTopSalespersonsThisMonth(3);
-        
-        // --- Lista de últimos vehículos ingresados ---
-        $ultimosIngresos = $vehiculosRepo->findLatestArrivals(5);
-
-        // --- NUEVA LÓGICA PARA EL KPI DE VENTAS POR EMPLEADO ---
-        $salespersonSales = $ventasRepo->findSalesCountAndAmountBySalesperson();
-        $salespersonChartData = [
-            'labels' => [],
-            'salesCount' => [],
-            'salesAmount' => [],
-        ];
-        foreach ($salespersonSales as $salesperson) {
-            $salespersonChartData['labels'][] = $salesperson['salespersonName'];
-            $salespersonChartData['salesCount'][] = (int) $salesperson['salesCount'];
-            $salespersonChartData['salesAmount'][] = (float) $salesperson['salesAmount'];
-        }
-
-        $dolarRates = [];
-        try {
-            $response = $httpClient->request('GET', 'https://dolarapi.com/v1/dolares');
-            if ($response->getStatusCode() === 200) {
-                $rates = $response->toArray();
-                // Buscamos las cotizaciones que nos interesan
-                foreach ($rates as $rate) {
-                    if ($rate['casa'] === 'oficial') {
-                        $dolarRates['oficial'] = $rate;
-                    }
-                    if ($rate['casa'] === 'blue') {
-                        $dolarRates['blue'] = $rate;
+            try {
+                $respuesta = $httpClient->request('GET', 'https://dolarapi.com/v1/dolares', ['timeout' => 3]);
+                $cotizaciones = [];
+                foreach ($respuesta->toArray() as $fila) {
+                    if (in_array($fila['casa'], ['oficial', 'blue'], true)) {
+                        $cotizaciones[$fila['casa']] = $fila;
                     }
                 }
+
+                return $cotizaciones;
+            } catch (\Throwable) {
+                return [];
             }
-        } catch (\Exception $e) {
-            // Si la API falla, no hacemos nada y la tarjeta no se mostrará.
-            // Podrías loguear el error si quisieras: error_log($e->getMessage());
-        }
-        
-        // --- Renderizar la plantilla con todas las variables ---
-        return $this->render('home/index.html.twig', [
-            'totalVehiculos' => $totalVehiculos,
-            'totalVehiculosVendidos' => $totalVehiculosVendidos,
-            'ventasMesActual' => $ventasMesActual,
-            'valorTotalInventario' => $valorTotalInventario,
-            'totalVendidoHistorico' => $totalVendidoHistorico,
-            'salesTrendChart' => $salesTrendChart,
-            'vehiculosPorMarcaChart' => $vehiculosPorMarcaChart,
-            'salesByMonthChart' => $salesByMonthChart,
-            'topSellingBrands' => $topSellingBrands,
-            'activityFeed' => $activityFeed,
-            'topSalespersons' => $topSalespersons,
-            'ultimosIngresos' => $ultimosIngresos,
-            'salespersonChartData' => $salespersonChartData,
-            'dolarRates' => $dolarRates,
-            'totalRecaudado' => $totalRecaudado,
-            'deudaPendiente' => $deudaPendiente,
-        ]);
+        });
     }
 }

@@ -1,0 +1,51 @@
+{# ---------------------------------------------------------------------------
+   Graficos en SVG inline: sin librerias, siguen la paleta y el tema.
+   Una serie por grafico, siempre con el valor a la vista.
+--------------------------------------------------------------------------- #}
+
+{# Barras verticales para una serie temporal (ej: operaciones por mes). #}
+{% macro barras(datos, alto = 120) %}
+    {% set maximo = max(datos|map(d => d.valor)) %}
+    {% set maximo = maximo > 0 ? maximo : 1 %}
+    <div class="flex items-end gap-1" style="height: {{ alto }}px" role="img"
+         aria-label="Operaciones por mes de los ultimos 12 meses">
+        {% for d in datos %}
+            {% set altura = (d.valor / maximo * 100)|round %}
+            <div class="group relative flex flex-1 flex-col items-center justify-end gap-1.5" style="height: 100%">
+                {% if d.valor > 0 %}
+                    <span class="mono text-[10px] font-medium text-muted">{{ d.valor }}</span>
+                {% endif %}
+                <div class="w-full rounded-t bg-accent transition-opacity group-hover:opacity-80"
+                     style="height: {{ altura }}%; min-height: {{ d.valor > 0 ? '3px' : '2px' }};
+                            {% if d.valor == 0 %}background-color: var(--app-line);{% endif %}">
+                </div>
+                <span class="text-[10px] text-subtle">{{ d.etiqueta }}</span>
+                <span class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2
+                             whitespace-nowrap rounded-md border border-line bg-surface px-2 py-1 text-xs shadow-lg
+                             group-hover:block">
+                    <span class="font-medium">{{ d.valor }}</span> {{ d.detalle|default('') }}
+                    <span class="block text-subtle">{{ d.periodo|default(d.etiqueta) }}</span>
+                </span>
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{# Barras horizontales para un ranking (ej: marcas mas vendidas). #}
+{% macro ranking(items) %}
+    {% set maximo = max(items|map(i => i.valor)) %}
+    {% set maximo = maximo > 0 ? maximo : 1 %}
+    <ul class="space-y-2.5">
+        {% for item in items %}
+            <li>
+                <div class="flex items-baseline justify-between gap-3 text-sm">
+                    <span class="truncate font-medium">{{ item.etiqueta }}</span>
+                    <span class="mono shrink-0 text-muted">{{ item.valor }}{{ item.sufijo|default('') }}</span>
+                </div>
+                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full" style="background-color: var(--app-line)">
+                    <div class="h-full rounded-full bg-accent" style="width: {{ (item.valor / maximo * 100)|round }}%"></div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}

@@ -11,33 +11,74 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Enum\VehicleStatus;
 use App\Repository\VentasRepository;
 use App\Entity\Cuotas;
+use App\Service\PaymentPlanGenerator;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 
 #[Route('/ventas')]
-#[IsGranted('ROLE_SALESPERSON')]
+#[IsGranted('ventas.ver')]
 class VentaController extends AbstractController
 {
-    #[Route('/', name: 'app_ventas_index', methods: ['GET'])]
-    public function index(VentasRepository $ventasRepository): Response
+    #[Route('/plan-preview', name: 'app_ventas_plan_preview', methods: ['GET'])]
+    #[IsGranted('ventas.crear')]
+    public function planPreview(Request $request, PaymentPlanGenerator $generator): JsonResponse
     {
+        $count = (int) $request->query->get('count', 0);
+        $price = (float) $request->query->get('price', 0);
+        $date  = $request->query->get('date', date('Y-m-d'));
+
+        if ($count <= 0 || $price <= 0) {
+            return new JsonResponse([]);
+        }
+
+        return new JsonResponse($generator->generateData($price, $count, new \DateTime($date)));
+    }
+
+    #[Route('/', name: 'app_ventas_index', methods: ['GET'])]
+    public function index(Request $request, VentasRepository $ventasRepository): Response
+    {
+        $filtros = [
+            'q'      => trim((string) $request->query->get('q')) ?: null,
+            'metodo' => $request->query->get('metodo') ?: null,
+            'moneda' => $request->query->get('moneda') ?: null,
+            'deuda'  => $request->query->get('deuda') ?: null,
+            'desde'  => $request->query->get('desde') ?: null,
+            'hasta'  => $request->query->get('hasta') ?: null,
+        ];
+        $sort = (string) $request->query->get('sort', 'fecha');
+        $dir  = strtoupper((string) $request->query->get('dir', 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+
+        $perPage    = 25;
+        $total      = $ventasRepository->countSearch($filtros);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+
         return $this->render('ventas/index.html.twig', [
-            // Buscamos todas las ventas, ordenadas por fecha descendente
-            'ventas' => $ventasRepository->findBy([], ['sale_date' => 'DESC']),
+            'ventas'      => $ventasRepository->search($filtros, $sort, $dir, $page, $perPage),
+            'totales'     => $ventasRepository->sumSearchByCurrency($filtros),
+            'metodos'     => ['Efectivo', 'Transferencia Bancaria', 'Financiado', 'Otro'],
+            'filters'     => $filtros,
+            'sort'        => $sort,
+            'dir'         => $dir,
+            'total'       => $total,
+            'currentPage' => $page,
+            'totalPages'  => $totalPages,
         ]);
     }
 
     // src/Controller/VentaController.php
 
     #[Route('/new/{id}', name: 'app_ventas_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ventas.crear')]
     public function new(Request $request, Vehiculos $vehiculo, EntityManagerInterface $entityManager): Response
     {
         // Verificación para no vender un auto que no está en stock o ya vendido
-        if (!in_array($vehiculo->getState(), ['En Stock', 'Reservado'])) {
+        if (!in_array($vehiculo->getState(), [VehicleStatus::EnStock->value, VehicleStatus::Reservado->value])) {
             $this->addFlash('danger', 'Este vehículo no está disponible para la venta.');
             return $this->redirectToRoute('app_vehiculos_index');
         }
@@ -59,7 +100,7 @@ class VentaController extends AbstractController
             $venta->setVendedor($this->getUser());
             
             // Cambiar el estado del vehículo a 'Vendido'
-            $vehiculo->setState('Vendido');
+            $vehiculo->setState(VehicleStatus::Vendido->value);
 
             // Si existía una reserva, se marca como 'Completada'
             if ($reserva = $vehiculo->getReserva()) {
@@ -131,6 +172,7 @@ class VentaController extends AbstractController
     }
 
     #[Route('/{id}/receipt', name: 'app_ventas_receipt')]
+    #[IsGranted('ventas.ver_recibo')]
     public function receipt(Ventas $venta): Response
     {
         $pdfOptions = new Options();
@@ -149,6 +191,7 @@ class VentaController extends AbstractController
     }
 
     #[Route('/{id}/delete', name: 'app_ventas_delete', methods: ['POST'])]
+    #[IsGranted('ventas.eliminar')]
     public function delete(Request $request, Ventas $venta, EntityManagerInterface $entityManager): JsonResponse
     {
         // Regla de negocio: No se puede eliminar una venta que ya tiene pagos registrados.
@@ -166,7 +209,7 @@ class VentaController extends AbstractController
             // 1. Devolver el vehículo al stock
             $vehiculo = $venta->getVehiculo();
             if ($vehiculo) {
-                $vehiculo->setState('En Stock');
+                $vehiculo->setState(VehicleStatus::EnStock->value);
             }
 
             // 2. Eliminar la venta (y sus cuotas en cascada)

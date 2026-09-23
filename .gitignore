@@ -18,3 +18,8 @@
 #/public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> dumps de base de datos ###
+# Contienen datos personales de clientes y hashes de usuarios. Nunca al repo.
+/*.sql
+###< dumps de base de datos ###

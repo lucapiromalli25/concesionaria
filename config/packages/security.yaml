@@ -38,6 +38,12 @@ security:
         ROLE_SALESPERSON: [ROLE_USER]
         ROLE_MANAGER:     [ROLE_SALESPERSON]
         ROLE_ADMIN:       [ROLE_MANAGER]
+        # Los roles nuevos salen de la tabla `rol` como ROLE_<CODIGO>. Se conectan
+        # con los viejos para que los #[IsGranted] actuales sigan funcionando
+        # mientras se migran a claves de funcionalidad.
+        ROLE_VENDEDOR:      [ROLE_SALESPERSON]
+        ROLE_GERENTE:       [ROLE_MANAGER]
+        ROLE_ADMINISTRADOR: [ROLE_ADMIN, ROLE_PRICE, ROLE_CREATE_USER]
         
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }

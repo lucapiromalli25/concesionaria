@@ -12,10 +12,11 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/admin/reports')]
-#[IsGranted('ROLE_MANAGER')] // Solo Gerentes y Admins pueden generar reportes
+#[IsGranted('reportes.ver')]
 class ReportController extends AbstractController
 {
     #[Route('/export/vehicles', name: 'app_report_export_vehicles', methods: ['GET'])]
+    #[IsGranted('reportes.exportar')]
     public function exportVehicles(VehiculosRepository $vehiculosRepository): StreamedResponse
     {
         $vehiculos = $vehiculosRepository->findAll();

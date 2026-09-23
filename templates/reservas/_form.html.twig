@@ -1,0 +1,118 @@
+{% form_theme form 'form/tailwind_theme.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+{% import 'partials/format.html.twig' as fmt %}
+
+<div data-controller="quick-create" data-action="combobox:create->quick-create#open">
+    <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+
+        {# ---- Datos de la reserva ---- #}
+        <div>
+            {{ form_start(form, {'attr': {'id': 'formReserva', 'novalidate': 'novalidate'}}) }}
+            <section class="card p-5">
+                <h2 class="section-title mb-4">Datos de la reserva</h2>
+
+                <div class="mb-4">{{ form_row(form.cliente) }}</div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {{ form_row(form.reservationDate) }}
+                    {{ form_row(form.expirationDate, {'help': 'Al vencer, el vehiculo deberia volver a stock.'}) }}
+                    {{ form_row(form.reservationCurrency) }}
+                    {{ form_row(form.reservationAmount, {'attr': {'inputmode': 'decimal', 'placeholder': '0'}}) }}
+                    {% if form.status is defined %}
+                        <div class="sm:col-span-2">{{ form_row(form.status) }}</div>
+                    {% endif %}
+                    <div class="sm:col-span-2">
+                        {{ form_row(form.observations, {'attr': {'rows': 3, 'placeholder': 'Condiciones acordadas, forma de pago de la seña...'}}) }}
+                    </div>
+                </div>
+
+                <div class="mt-5 flex justify-end gap-2">
+                    <a href="{{ cancelPath }}" class="btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn-primary">{{ submitLabel }}</button>
+                </div>
+            </section>
+            {{ form_end(form) }}
+        </div>
+
+        {# ---- Vehiculo ---- #}
+        <aside class="space-y-5">
+            <section class="card overflow-hidden">
+                {% if vehiculo.imagenesVehiculos is not empty %}
+                    <img src="{{ vich_uploader_asset(vehiculo.imagenesVehiculos|first, 'imageFile') }}" alt=""
+                         class="aspect-video w-full bg-surface-2 object-cover">
+                {% endif %}
+                <div class="p-5">
+                    <h2 class="section-title mb-3">Vehiculo</h2>
+                    <p class="text-base font-semibold">
+                        {{ vehiculo.version.modelo.marca.name }} {{ vehiculo.version.modelo.name }}
+                    </p>
+                    {% if vehiculo.version.name %}
+                        <p class="text-sm text-muted">{{ vehiculo.version.name }}</p>
+                    {% endif %}
+
+                    <div class="mt-4 flex items-center gap-3">
+                        {% if vehiculo.plateNumber %}<span class="plate">{{ vehiculo.plateNumber }}</span>{% endif %}
+                        <span class="mono text-sm text-muted">{{ vehiculo.anio }}</span>
+                        {{ fmt.estadoVehiculo(vehiculo.state) }}
+                    </div>
+
+                    <dl class="mt-4 space-y-3 border-t border-line pt-4">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="field-label">Precio sugerido</dt>
+                            <dd class="text-sm font-semibold">
+                                {% if vehiculo.suggestedRetailPriceUsd + 0 > 0 %}{{ fmt.money(vehiculo.suggestedRetailPriceUsd, 'USD', 0) }}
+                                {% elseif vehiculo.suggestedRetailPrice + 0 > 0 %}{{ fmt.money(vehiculo.suggestedRetailPrice, 'ARS', 0) }}
+                                {% else %}<span class="badge-amber">sin precio</span>{% endif %}
+                            </dd>
+                        </div>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="field-label">Kilometros</dt>
+                            <dd class="mono text-sm">{{ vehiculo.kilometers ? vehiculo.kilometers|number_format(0, ',', '.') : '-' }}</dd>
+                        </div>
+                    </dl>
+
+                    <a href="{{ path('app_vehiculos_show', {'id': vehiculo.id}) }}" class="btn-secondary btn-sm mt-4 w-full">
+                        Ver ficha completa
+                    </a>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    {# ---- Alta rapida de cliente ---- #}
+    <dialog data-quick-create-target="dialog" data-kind="cliente" class="modal max-w-md">
+        <form action="{{ path('app_catalogo_cliente_rapido') }}" data-action="quick-create#submit">
+            <div class="modal-header">
+                <h3 class="font-semibold">Nuevo cliente</h3>
+                <p class="hint mt-0.5">Si el documento ya existe, se usa ese cliente.</p>
+            </div>
+            <div class="space-y-3 px-5 py-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">Nombre</label>
+                        <input name="firstName" required class="input">
+                    </div>
+                    <div>
+                        <label class="label">Apellido</label>
+                        <input name="lastName" required class="input">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label">DNI</label>
+                        <input name="documentNumber" required class="input" inputmode="numeric" placeholder="Solo numeros">
+                    </div>
+                    <div>
+                        <label class="label">Telefono</label>
+                        <input name="phone" class="input" inputmode="tel">
+                    </div>
+                </div>
+                <p data-error class="hidden rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-action="quick-create#close" class="btn-secondary btn-sm">Cancelar</button>
+                <button type="submit" class="btn-primary btn-sm">Crear y seleccionar</button>
+            </div>
+        </form>
+    </dialog>
+</div>

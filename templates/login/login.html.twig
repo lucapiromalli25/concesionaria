@@ -1,46 +1,53 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <title>Iniciar Sesión - Atilio Automotores</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.min.css') }}">
-    <style>
-        body { background-color: #f4f4f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .login-card { max-width: 400px; width: 100%; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ingresar - Atilio Automotores</title>
+    <link rel="icon" href="{{ asset('assets/img/kaiadmin/favicon.ico') }}" type="image/x-icon"/>
+    <script>
+        (function () {
+            document.documentElement.classList.toggle('dark', localStorage.getItem('tema') === 'dark');
+        })();
+    </script>
+    {{ importmap('app') }}
 </head>
-<body>
-    <div class="card login-card shadow-lg">
-        <div class="card-header text-center">
-            <h3 class="fw-bold mb-0">Iniciar Sesión</h3>
+<body class="h-full">
+<div class="flex min-h-full items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
+        <div class="mb-6 flex flex-col items-center gap-3 text-center">
+            <img src="{{ asset('assets/img/kaiadmin/atilio_automotores.png') }}" alt="Atilio Automotores" class="h-16 w-auto">
+            <h1 class="text-lg font-semibold tracking-tight">Atilio Automotores</h1>
         </div>
-        <div class="card-body">
-            <form method="post">
-                {% if error %}
-                    <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-                {% endif %}
 
-                <div class="form-group">
-                    <label for="inputDni">DNI</label>
-                    <input type="text" value="{{ last_username }}" name="_username" id="inputDni" class="form-control" autocomplete="username" required autofocus>
+        <form method="post" class="card p-6">
+            {% if error %}
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+                    {{ error.messageKey|trans(error.messageData, 'security') }}
+                </div>
+            {% endif %}
+
+            <div class="space-y-4">
+                <div>
+                    <label for="inputDni" class="label">DNI</label>
+                    <input type="text" name="_username" id="inputDni" value="{{ last_username }}"
+                           class="input" inputmode="numeric" autocomplete="username" required autofocus>
                 </div>
 
-                <div class="form-group">
-                    <label for="inputPassword">Contraseña</label>
-                    <input type="password" name="_password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+                <div>
+                    <label for="inputPassword" class="label">Contraseña</label>
+                    <input type="password" name="_password" id="inputPassword"
+                           class="input" autocomplete="current-password" required>
                 </div>
+            </div>
 
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
 
-                <button class="btn btn-primary w-100 fw-bold mt-3" type="submit">
-                    Ingresar
-                </button>
-                 <hr>
-                {#<p class="text-center">¿No tienes cuenta? <a href="{{ path('app_register') }}">Regístrate aquí</a></p>#}
-            </form>
-        </div>
+            <button type="submit" class="btn-primary mt-6 w-full">Ingresar</button>
+        </form>
+
+        <p class="mt-6 text-center text-xs text-subtle">Sistema de gestion interna</p>
     </div>
+</div>
 </body>
 </html>

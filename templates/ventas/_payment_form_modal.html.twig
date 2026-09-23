@@ -1,15 +1,37 @@
-{% set form_action = path('app_cuotas_register_payment', {'id': cuota.id}) %}
-{{ form_start(form, {'action': form_action, 'attr': {'id': 'formPayment', 'enctype': 'multipart/form-data'}}) }}
-    
-    {{ form_row(form.paymentDate) }}
-    {{ form_row(form.paidAmount) }}
-    {{ form_row(form.paidCurrency) }}
-    {{ form_row(form.receiptFile) }}
+{% form_theme form 'form/tailwind_theme.html.twig' %}
+
+{{ form_start(form, {'action': path('app_cuotas_register_payment', {'id': cuota.id}), 'attr': {'enctype': 'multipart/form-data'}}) }}
+    {% if not form.vars.valid %}
+        <div class="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+            {{ form_errors(form) }}
+            {% if form.vars.errors|length == 0 %}No se pudo guardar. Revisa los campos marcados.{% endif %}
+        </div>
+    {% endif %}
+    <div class="space-y-4 px-5 py-4">
+        <div class="rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm">
+            <div class="flex items-baseline justify-between">
+                <span class="text-muted">Cuota {{ cuota.installmentNumber }}</span>
+                <span class="font-semibold tabular-nums">
+                    {{ cuota.venta.saleCurrency|default('ARS') == 'USD' ? 'USD' : '$' }}
+                    {{ cuota.amount|number_format(2, ',', '.') }}
+                </span>
+            </div>
+            <div class="mt-0.5 flex items-baseline justify-between text-xs text-subtle">
+                <span>Vence {{ cuota.dueDate|date('d/m/Y') }}</span>
+                <span>{{ cuota.venta.cliente.firstName }} {{ cuota.venta.cliente.lastName }}</span>
+            </div>
+        </div>
+
+        {{ form_row(form.paymentDate) }}
+        <div class="grid grid-cols-2 gap-3">
+            {{ form_row(form.paidCurrency) }}
+            {{ form_row(form.paidAmount, {'attr': {'inputmode': 'decimal'}}) }}
+        </div>
+        {{ form_row(form.receiptFile) }}
+    </div>
 
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="btn btn-primary">
-            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> Confirmar Pago
-        </button>
+        <button type="button" data-action="remote-dialog#close" class="btn-secondary btn-sm">Cancelar</button>
+        <button type="submit" class="btn-primary btn-sm">Registrar pago</button>
     </div>
 {{ form_end(form) }}

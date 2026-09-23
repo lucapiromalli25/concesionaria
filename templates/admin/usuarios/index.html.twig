@@ -1,0 +1,137 @@
+{% extends 'layout.html.twig' %}
+{% import 'partials/icons.html.twig' as icons %}
+
+{% set sinPermisos = filas|filter(f => f[0].rolesAsignados|length == 0) %}
+
+{% block title %}Usuarios - Atilio Automotores{% endblock %}
+{% block page_title %}Usuarios{% endblock %}
+{% block page_subtitle %}
+    <p class="text-xs text-muted">{{ filas|length }} usuario{{ filas|length == 1 ? '' : 's' }}</p>
+{% endblock %}
+
+{% block page_actions %}
+    {% if is_granted('usuarios.crear') %}
+        <button type="button" class="btn-primary btn-sm"
+                data-action="remote-dialog#open"
+                data-dialog-url="{{ path('app_user_new') }}"
+                data-dialog-title="Nuevo usuario">
+            {{ icons.icon('plus', 'size-4') }}<span class="hidden sm:inline">Nuevo usuario</span>
+        </button>
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+<div>
+    {% if sinPermisos|length %}
+        <div class="mb-3 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-300">
+            {{ icons.icon('alert', 'size-5 shrink-0') }}
+            <div>
+                <p class="font-medium">{{ sinPermisos|length }} usuario{{ sinPermisos|length == 1 ? '' : 's' }} sin ningun rol</p>
+                <p class="mt-0.5">
+                    Pueden entrar al sistema y ver el panel, pero no acceden a ningun modulo.
+                    Si ya no trabajan aca, conviene cambiarles la contraseña.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if dnisRepetidos|length %}
+        <div class="mb-3 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-300">
+            {{ icons.icon('alert', 'size-5 shrink-0') }}
+            <div>
+                <p class="font-medium">Hay DNIs repetidos: {{ dnisRepetidos|join(', ') }}</p>
+                <p class="mt-0.5">El ingreso al sistema es por DNI, asi que esos usuarios no van a poder entrar.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card overflow-hidden">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>DNI</th>
+                        <th>Permisos</th>
+                        <th class="text-right">Actividad</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for fila in filas %}
+                    {% set usuario = fila[0] %}
+                    {% set permisos = usuario.rolesAsignados %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-2.5">
+                                <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold">
+                                    {{ usuario.completeName|slice(0, 1)|upper }}
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="font-medium">
+                                        {{ usuario.completeName }}
+                                        {% if app.user and usuario.id == app.user.id %}
+                                            <span class="badge-accent ml-1">vos</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="truncate text-xs text-subtle">{{ usuario.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="mono">{{ usuario.dni|default('-') }}</td>
+                        <td>
+                            {% if permisos|length %}
+                                <div class="flex flex-wrap gap-1">
+                                    {% for rol in permisos %}
+                                        <span class="{{ rol.esAdministrador ? 'badge-accent' : 'badge' }}"
+                                              title="{{ rol.descripcion }}">{{ rol.nombre }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="badge-amber">sin rol</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right text-xs text-muted">
+                            {% if fila.ventas or fila.reservas or fila.vehiculos %}
+                                {% if fila.ventas %}<span class="mr-2">{{ fila.ventas }} venta{{ fila.ventas == 1 ? '' : 's' }}</span>{% endif %}
+                                {% if fila.reservas %}<span class="mr-2">{{ fila.reservas }} reserva{{ fila.reservas == 1 ? '' : 's' }}</span>{% endif %}
+                                {% if fila.vehiculos %}<span>{{ fila.vehiculos }} vehiculo{{ fila.vehiculos == 1 ? '' : 's' }}</span>{% endif %}
+                            {% else %}
+                                <span class="text-subtle">sin operaciones</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex items-center justify-end gap-1">
+                                {% if is_granted('usuarios.editar') %}
+                                    <button type="button" class="btn-ghost btn-sm" title="Editar"
+                                            data-action="remote-dialog#open"
+                                            data-dialog-url="{{ path('app_user_edit', {'id': usuario.id}) }}"
+                                            data-dialog-title="Editar usuario">
+                                        {{ icons.icon('pencil', 'size-4') }}
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="hint mt-3">
+        No hay baja de usuarios: para sacarle el acceso a alguien hay que quitarle los permisos y
+        cambiarle la contraseña.
+    </p>
+
+    <dialog data-remote-dialog-target="dialog" class="modal max-w-lg">
+        <div class="modal-header flex items-center justify-between">
+            <h3 class="font-semibold" data-remote-dialog-target="title"></h3>
+            <button type="button" data-action="remote-dialog#close" class="btn-ghost btn-icon">
+                {{ icons.icon('x', 'size-4') }}
+            </button>
+        </div>
+        <div data-remote-dialog-target="content"></div>
+    </dialog>
+</div>
+{% endblock %}
