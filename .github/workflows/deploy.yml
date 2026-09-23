@@ -36,6 +36,17 @@ jobs:
           php bin/console lint:twig templates
           php bin/console lint:container
 
+      # Se compila aca y no en el server: alla el binario de Tailwind (Bun) no
+      # puede cargar lightningcss porque /tmp esta montado noexec.
+      - name: Compilar Tailwind
+        run: php bin/console tailwind:build --minify
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tailwind-css
+          path: var/tailwind/app.built.css
+          retention-days: 1
+
   desplegar:
     needs: verificar
     runs-on: ubuntu-latest
@@ -49,6 +60,22 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tailwind-css
+          path: dist
+
+      - name: Subir el CSS compilado
+        env:
+          APP_DIR: domains/atilioautomotores.com/public_html/concesionaria
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "mkdir -p $APP_DIR/var/tailwind"
+          scp -i ~/.ssh/deploy_key -P "${{ secrets.SSH_PORT }}" \
+            dist/app.built.css \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$APP_DIR/var/tailwind/app.built.css"
 
       # El script se manda por stdin en vez de ejecutarlo desde el server: en el
       # primer deploy todavia no existe alla, y asi siempre corre la version del

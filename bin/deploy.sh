@@ -24,8 +24,15 @@ composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 echo "==> migraciones"
 "$PHP" bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
+# Tailwind NO se compila aca: el binario es de Bun y necesita cargar lightningcss
+# como libreria nativa desde /tmp, que en este hosting esta montado noexec
+# ("failed to map segment from shared object"). Lo compila GitHub Actions y lo
+# sube por scp antes de correr este script.
 echo "==> assets"
-"$PHP" bin/console tailwind:build --minify
+if [ ! -f var/tailwind/app.built.css ]; then
+    echo "ERROR: falta var/tailwind/app.built.css. Lo compila el workflow y lo sube por scp." >&2
+    exit 1
+fi
 "$PHP" bin/console asset-map:compile
 
 echo "==> cache"
