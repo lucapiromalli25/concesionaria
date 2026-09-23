@@ -34,10 +34,10 @@
                 <thead>
                     <tr>
                         <th class="min-w-72">Funcionalidad</th>
-                        {% if admin %}
+                        {% if superadmin %}
                             <th class="w-28 text-center">
-                                <span class="block">{{ admin.nombre }}</span>
-                                <span class="block text-[10px] font-normal normal-case text-subtle">de sistema</span>
+                                <span class="block">{{ superadmin.nombre }}</span>
+                                <span class="block text-[10px] font-normal normal-case text-subtle">todos, siempre</span>
                             </th>
                         {% endif %}
                         {% for rol in roles %}
@@ -55,7 +55,7 @@
                 <tbody>
                 {% for modulo, funcionalidades in porModulo %}
                     <tr class="bg-surface-2">
-                        <th colspan="{{ roles|length + (admin ? 2 : 1) }}" class="text-left">
+                        <th colspan="{{ roles|length + (superadmin ? 2 : 1) }}" class="text-left">
                             {{ modulo }}
                         </th>
                     </tr>
@@ -67,10 +67,10 @@
                                     {{ funcionalidad.clave }}{% if funcionalidad.descripcion %} - {{ funcionalidad.descripcion }}{% endif %}
                                 </p>
                             </td>
-                            {% if admin %}
+                            {% if superadmin %}
                                 <td class="text-center">
                                     <input type="checkbox" checked disabled
-                                           title="El rol de sistema tiene todos los permisos"
+                                           title="El superadmin tiene todos los permisos, siempre"
                                            class="size-4 rounded border-line accent-[var(--app-accent)] opacity-50">
                                 </td>
                             {% endif %}

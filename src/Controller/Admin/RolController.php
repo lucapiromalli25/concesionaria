@@ -49,8 +49,8 @@ class RolController extends AbstractController
     #[IsGranted('roles.administrar')]
     public function edit(Request $request, Rol $rol, EntityManagerInterface $em): Response
     {
-        if ($rol->esAdministrador()) {
-            $this->addFlash('error', 'El rol administrador no se puede editar.');
+        if ($rol->esSuperadmin()) {
+            $this->addFlash('error', 'El rol superadmin no se puede editar.');
 
             return $this->redirectToRoute('app_roles_index');
         }
@@ -80,7 +80,7 @@ class RolController extends AbstractController
             return new JsonResponse(['status' => 'error', 'message' => 'Token de seguridad invalido.'], Response::HTTP_BAD_REQUEST);
         }
 
-        if ($rol->isEsSistema() || $rol->esAdministrador()) {
+        if ($rol->isEsSistema() || $rol->esSuperadmin()) {
             return new JsonResponse(['status' => 'error', 'message' => 'El rol de sistema no se puede eliminar.'], Response::HTTP_BAD_REQUEST);
         }
 

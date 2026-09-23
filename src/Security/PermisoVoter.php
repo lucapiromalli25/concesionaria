@@ -12,8 +12,10 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * Resuelve los permisos con formato `modulo.accion` contra los roles del usuario.
  *
  * Reglas:
- * - El rol administrador pasa siempre, por codigo. Sin esto, sacarse el permiso de
- *   administrar roles dejaria el sistema sin forma de volver a entrar.
+ * - El rol superadmin pasa siempre, por codigo. Sin esto, sacarse el permiso de
+ *   administrar roles dejaria el sistema sin forma de volver a entrar. El rol
+ *   administrador ya no pasa por codigo: tiene sus permisos en la tabla, como
+ *   cualquier otro, y no llega al modulo de Administracion.
  * - Una clave que no esta en config/permisos.php se rechaza y se loguea: es un
  *   error de programacion (un IsGranted con un typo), no un permiso denegado.
  * - Sin usuario, no pasa nada.
@@ -51,7 +53,7 @@ class PermisoVoter extends Voter
             return false;
         }
 
-        if ($usuario->esAdministrador()) {
+        if ($usuario->esSuperadmin()) {
             return true;
         }
 

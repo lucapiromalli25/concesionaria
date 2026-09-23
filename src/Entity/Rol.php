@@ -18,7 +18,17 @@ class Rol implements AuditableInterface
 {
     use Auditable;
 
-    /** Rol de sistema: pasa todos los permisos y no se puede editar ni borrar. */
+    /**
+     * Rol irrestricto: pasa todos los permisos por codigo y no se puede editar ni
+     * borrar. Es el unico con acceso al modulo de Administracion.
+     *
+     * Tiene que existir alguno asi: si los permisos de administrar roles salieran
+     * de la tabla, sacarselo a todos dejaria el sistema sin forma de volver a
+     * entrar.
+     */
+    public const CODIGO_SUPERADMIN = 'superadmin';
+
+    /** Rol de sistema, pero con permisos explicitos como cualquier otro. */
     public const CODIGO_ADMINISTRADOR = 'administrador';
 
     #[ORM\Id]
@@ -117,6 +127,11 @@ class Rol implements AuditableInterface
     public function esAdministrador(): bool
     {
         return $this->codigo === self::CODIGO_ADMINISTRADOR;
+    }
+
+    public function esSuperadmin(): bool
+    {
+        return $this->codigo === self::CODIGO_SUPERADMIN;
     }
 
     /** @return Collection<int, RolFuncionalidad> */

@@ -24,7 +24,7 @@ class PermisoController extends AbstractController
     #[Route('/', name: 'app_permisos_index', methods: ['GET'])]
     public function index(RolRepository $roles, FuncionalidadRepository $funcionalidades): Response
     {
-        $editables = array_filter($roles->findAll(), fn (Rol $rol) => $rol->estaActivo() && !$rol->esAdministrador());
+        $editables = array_filter($roles->findAll(), fn (Rol $rol) => $rol->estaActivo() && !$rol->esSuperadmin());
         usort($editables, fn (Rol $a, Rol $b) => strcmp((string) $a->getNombre(), (string) $b->getNombre()));
 
         // rol_id => [clave => true], para marcar los checkboxes sin recorrer la
@@ -38,7 +38,7 @@ class PermisoController extends AbstractController
             'roles'      => $editables,
             'porModulo'  => $funcionalidades->findAgrupadasPorModulo(),
             'marcados'   => $marcados,
-            'admin'      => $roles->findOneByCodigo(Rol::CODIGO_ADMINISTRADOR),
+            'superadmin' => $roles->findOneByCodigo(Rol::CODIGO_SUPERADMIN),
         ]);
     }
 
@@ -61,7 +61,7 @@ class PermisoController extends AbstractController
         $cambios = 0;
 
         foreach ($roles->findAll() as $rol) {
-            if (!$rol->estaActivo() || $rol->esAdministrador()) {
+            if (!$rol->estaActivo() || $rol->esSuperadmin()) {
                 continue;
             }
 

@@ -187,6 +187,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Auditab
         return false;
     }
 
+    public function esSuperadmin(): bool
+    {
+        foreach ($this->getRolesAsignados() as $rol) {
+            if ($rol->esSuperadmin() && $rol->estaActivo()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Claves de funcionalidad que el usuario tiene por sus roles.
      *

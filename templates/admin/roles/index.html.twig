@@ -52,7 +52,7 @@
                         </td>
                         <td class="mono text-xs text-muted">{{ rol.codigo }}</td>
                         <td class="text-right">
-                            {% if rol.esAdministrador %}
+                            {% if rol.esSuperadmin %}
                                 <span class="badge-accent">todos</span>
                             {% elseif rol.claves|length %}
                                 <a href="{{ path('app_permisos_index') }}" class="badge">{{ rol.claves|length }}</a>
