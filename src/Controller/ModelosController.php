@@ -22,12 +22,12 @@ class ModelosController extends AbstractController
     public function index(Request $request, ModelosRepository $modelosRepository, MarcasRepository $marcasRepository): Response
     {
         $q       = trim((string) $request->query->get('q')) ?: null;
-        $marcaId = $request->query->getInt('marca') ?: null;
+        $marcaId = (int) $request->query->get('marca') ?: null;
 
         $perPage    = 25;
         $total      = $modelosRepository->countSearch($q, $marcaId);
         $totalPages = max(1, (int) ceil($total / $perPage));
-        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+        $page       = max(1, min((int) $request->query->get('page', 1), $totalPages));
 
         return $this->render('modelos/index.html.twig', [
             'q'           => $q,

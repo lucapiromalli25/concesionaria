@@ -45,7 +45,7 @@
 
             {# ---- Filtros ---- #}
             <form method="get" action="{{ path('app_ventas_index') }}"
-                  data-controller="filter-form" data-action="input->filter-form#submit change->filter-form#submitNow"
+                  data-controller="filter-form"
                   class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
                 <div class="relative min-w-64 flex-1">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
@@ -83,7 +83,7 @@
 
                 <input type="hidden" name="sort" value="{{ sort }}">
                 <input type="hidden" name="dir" value="{{ dir }}">
-                <noscript><button type="submit" class="btn-primary">Filtrar</button></noscript>
+                <button type="submit" class="btn-primary">{{ icons.icon('search', 'size-4') }} Buscar</button>
 
                 {% if filters.q or filters.metodo or filters.moneda or filters.deuda or filters.desde or filters.hasta %}
                     <a href="{{ path('app_ventas_index') }}" class="btn-ghost btn-sm">{{ icons.icon('x', 'size-4') }} Limpiar</a>

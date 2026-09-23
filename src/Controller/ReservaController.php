@@ -32,7 +32,7 @@ class ReservaController extends AbstractController
         $perPage    = 25;
         $total      = $reservasRepository->countSearch($q, $estado);
         $totalPages = max(1, (int) ceil($total / $perPage));
-        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+        $page       = max(1, min((int) $request->query->get('page', 1), $totalPages));
 
         return $this->render('reservas/index.html.twig', [
             'reservas'    => $reservasRepository->search($q, $estado, $page, $perPage),

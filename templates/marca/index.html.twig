@@ -23,7 +23,7 @@
     <turbo-frame id="marcas" data-turbo-action="advance" class="block">
         <div class="card overflow-hidden">
             <form method="get" action="{{ path('app_marca_index') }}"
-                  data-controller="filter-form" data-action="input->filter-form#submit"
+                  data-controller="filter-form"
                   class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
                 <div class="relative min-w-64 flex-1">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
@@ -32,7 +32,7 @@
                     <input type="search" name="q" value="{{ q }}" autocomplete="off"
                            placeholder="Buscar marca" class="input pl-9">
                 </div>
-                <noscript><button type="submit" class="btn-primary">Buscar</button></noscript>
+                <button type="submit" class="btn-primary">{{ icons.icon('search', 'size-4') }} Buscar</button>
                 {% if q %}
                     <a href="{{ path('app_marca_index') }}" class="btn-ghost btn-sm">{{ icons.icon('x', 'size-4') }} Limpiar</a>
                 {% endif %}

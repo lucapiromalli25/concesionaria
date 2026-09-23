@@ -33,7 +33,7 @@
     <turbo-frame id="modelos" data-turbo-action="advance" class="block">
         <div class="card overflow-hidden">
             <form method="get" action="{{ path('app_modelos_index') }}"
-                  data-controller="filter-form" data-action="input->filter-form#submit change->filter-form#submitNow"
+                  data-controller="filter-form"
                   class="flex flex-wrap items-end gap-3 border-b border-line bg-surface-2 p-4">
                 <div class="relative min-w-64 flex-1">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-subtle">
@@ -48,7 +48,7 @@
                         <option value="{{ marca.id }}" {{ marcaId == marca.id ? 'selected' }}>{{ marca.name }}</option>
                     {% endfor %}
                 </select>
-                <noscript><button type="submit" class="btn-primary">Buscar</button></noscript>
+                <button type="submit" class="btn-primary">{{ icons.icon('search', 'size-4') }} Buscar</button>
                 {% if q or marcaId %}
                     <a href="{{ path('app_modelos_index') }}" class="btn-ghost btn-sm">{{ icons.icon('x', 'size-4') }} Limpiar</a>
                 {% endif %}

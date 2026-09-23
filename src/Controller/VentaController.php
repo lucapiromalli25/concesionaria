@@ -56,7 +56,7 @@ class VentaController extends AbstractController
         $perPage    = 25;
         $total      = $ventasRepository->countSearch($filtros);
         $totalPages = max(1, (int) ceil($total / $perPage));
-        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+        $page       = max(1, min((int) $request->query->get('page', 1), $totalPages));
 
         return $this->render('ventas/index.html.twig', [
             'ventas'      => $ventasRepository->search($filtros, $sort, $dir, $page, $perPage),

@@ -24,17 +24,17 @@ class VehiculosController extends AbstractController
         $filters = [
             'q'       => trim((string) $request->query->get('q')) ?: null,
             'estado'  => $request->query->get('estado') ?: null,
-            'marca'   => $request->query->getInt('marca') ?: null,
-            'anioMin' => $request->query->getInt('anioMin') ?: null,
-            'anioMax' => $request->query->getInt('anioMax') ?: null,
+            'marca'   => (int) $request->query->get('marca') ?: null,
+            'anioMin' => (int) $request->query->get('anioMin') ?: null,
+            'anioMax' => (int) $request->query->get('anioMax') ?: null,
         ];
         $sort = (string) $request->query->get('sort', 'id');
         $dir  = strtoupper((string) $request->query->get('dir', 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
 
-        $perPage    = max(10, min($request->query->getInt('perPage', 25), 100));
+        $perPage    = max(10, min((int) $request->query->get('perPage', 25), 100));
         $total      = $vehiculosRepository->countSearch($filters);
         $totalPages = max(1, (int) ceil($total / $perPage));
-        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+        $page       = max(1, min((int) $request->query->get('page', 1), $totalPages));
 
         return $this->render('vehiculos/index.html.twig', [
             'vehiculos'   => $vehiculosRepository->search($filters, $sort, $dir, $page, $perPage),

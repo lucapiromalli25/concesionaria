@@ -24,7 +24,7 @@ class ProveedoresController extends AbstractController
         $perPage    = 25;
         $total      = $proveedoresRepository->countSearch($q);
         $totalPages = max(1, (int) ceil($total / $perPage));
-        $page       = max(1, min($request->query->getInt('page', 1), $totalPages));
+        $page       = max(1, min((int) $request->query->get('page', 1), $totalPages));
 
         return $this->render('proveedores/index.html.twig', [
             'filas'       => $proveedoresRepository->search($q, $page, $perPage),
