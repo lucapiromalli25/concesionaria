@@ -12,21 +12,25 @@ concurrency:
 jobs:
   verificar:
     runs-on: ubuntu-latest
+    # A nivel de job: con --no-dev los bundles de dev no estan instalados, asi que
+    # todo (incluido el cache:clear de composer) tiene que correr en prod.
+    env:
+      APP_ENV: prod
+      APP_SECRET: solo-para-el-lint
     steps:
       - uses: actions/checkout@v4
 
+      # 8.3 para igualar el PHP del server (8.3.33). Con 8.2 composer no resuelve:
+      # phpunit 12 y sebastian/* exigen >=8.3.
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: intl, pdo_mysql, gd, zip
           tools: composer
 
-      - run: composer install --no-interaction --no-progress
+      - run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
       - name: Lint de YAML, Twig y contenedor
-        env:
-          APP_ENV: prod
-          APP_SECRET: solo-para-el-lint
         run: |
           php bin/console lint:yaml config --parse-tags
           php bin/console lint:twig templates
