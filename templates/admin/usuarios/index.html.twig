@@ -1,7 +1,8 @@
 {% extends 'layout.html.twig' %}
 {% import 'partials/icons.html.twig' as icons %}
 
-{% set sinPermisos = filas|filter(f => f[0].rolesAsignados|length == 0) %}
+{# Solo los activos: un usuario dado de baja no entra al sistema aunque no tenga rol. #}
+{% set sinPermisos = filas|filter(f => f[0].estaActivo and f[0].rolesAsignados|length == 0) %}
 
 {% block title %}Usuarios - Atilio Automotores{% endblock %}
 {% block page_title %}Usuarios{% endblock %}
@@ -21,7 +22,7 @@
 {% endblock %}
 
 {% block body %}
-<div>
+<div data-controller="confirm-action">
     {% if sinPermisos|length %}
         <div class="mb-3 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-300">
             {{ icons.icon('alert', 'size-5 shrink-0') }}
@@ -29,7 +30,8 @@
                 <p class="font-medium">{{ sinPermisos|length }} usuario{{ sinPermisos|length == 1 ? '' : 's' }} sin ningun rol</p>
                 <p class="mt-0.5">
                     Pueden entrar al sistema y ver el panel, pero no acceden a ningun modulo.
-                    Si ya no trabajan aca, conviene cambiarles la contraseña.
+                    Si ya no trabajan aca, dales de baja: no van a poder entrar mas y su historial
+                    de ventas y reservas queda intacto.
                 </p>
             </div>
         </div>
@@ -61,7 +63,8 @@
                 {% for fila in filas %}
                     {% set usuario = fila[0] %}
                     {% set permisos = usuario.rolesAsignados %}
-                    <tr>
+                    {% set deBaja = not usuario.estaActivo %}
+                    <tr class="{{ deBaja ? 'opacity-55' : '' }}">
                         <td>
                             <div class="flex items-center gap-2.5">
                                 <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold">
@@ -72,6 +75,10 @@
                                         {{ usuario.completeName }}
                                         {% if app.user and usuario.id == app.user.id %}
                                             <span class="badge-accent ml-1">vos</span>
+                                        {% endif %}
+                                        {% if deBaja %}
+                                            <span class="badge-red ml-1"
+                                                  title="Dado de baja{% if usuario.deletedAt %} el {{ usuario.deletedAt|date('d/m/Y') }}{% endif %}{% if usuario.deletedBy %} por {{ usuario.deletedBy.completeName }}{% endif %}">de baja</span>
                                         {% endif %}
                                     </p>
                                     <p class="truncate text-xs text-subtle">{{ usuario.email }}</p>
@@ -110,6 +117,28 @@
                                         {{ icons.icon('pencil', 'size-4') }}
                                     </button>
                                 {% endif %}
+
+                                {% if is_granted('usuarios.eliminar') and not (app.user and usuario.id == app.user.id) %}
+                                    {% if deBaja %}
+                                        <button type="button" class="btn-ghost btn-sm" title="Reactivar"
+                                                data-action="confirm-action#ask"
+                                                data-confirm-url="{{ path('app_user_reactivar', {'id': usuario.id}) }}"
+                                                data-confirm-token="{{ csrf_token('reactivar-usuario' ~ usuario.id) }}"
+                                                data-confirm-label="Reactivar usuario"
+                                                data-confirm-message="{{ usuario.completeName }} vuelve a poder entrar al sistema, con los roles que ya tenia.">
+                                            {{ icons.icon('check', 'size-4') }}
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn-ghost btn-sm text-red-600" title="Dar de baja"
+                                                data-action="confirm-action#ask"
+                                                data-confirm-url="{{ path('app_user_baja', {'id': usuario.id}) }}"
+                                                data-confirm-token="{{ csrf_token('baja-usuario' ~ usuario.id) }}"
+                                                data-confirm-label="Dar de baja"
+                                                data-confirm-message="{{ usuario.completeName }} no va a poder entrar mas al sistema, ni siquiera con la sesion abierta. No se borra nada: sus ventas y reservas quedan como estan.">
+                                            {{ icons.icon('trash', 'size-4') }}
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -120,8 +149,8 @@
     </div>
 
     <p class="hint mt-3">
-        No hay baja de usuarios: para sacarle el acceso a alguien hay que quitarle los permisos y
-        cambiarle la contraseña.
+        La baja es logica: el usuario no puede entrar mas, pero no se borra nada y su historial de
+        ventas y reservas queda intacto. Se puede reactivar y recupera los roles que tenia.
     </p>
 
     <dialog data-remote-dialog-target="dialog" class="modal max-w-lg">

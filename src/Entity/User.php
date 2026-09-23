@@ -2,11 +2,13 @@
 
 namespace App\Entity;
 
+use App\Entity\Trait\Auditable;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -14,8 +16,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[UniqueEntity(fields: ['email'], message: 'Ya existe un usuario con este email.')]
 #[UniqueEntity(fields: ['dni'], message: 'Ya existe una cuenta con este DNI.')]
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, AuditableInterface, EquatableInterface
 {
+    use Auditable;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -252,5 +256,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->dni = $dni;
         return $this;
+    }
+
+    /**
+     * Symfony compara el usuario de la sesion contra el que acaba de leer de la
+     * base en cada request; si no coinciden, cierra la sesion. Sin esto, dar de
+     * baja a alguien que ya esta trabajando no lo saca: sigue navegando hasta
+     * que la sesion expire sola.
+     *
+     * Ojo con el password: __serialize() lo guarda en la sesion hasheado con
+     * CRC32C, asi que compararlo aca contra el hash de la base da siempre
+     * distinto y cierra la sesion en cada request. De los cambios de password ya
+     * se encarga Symfony por su cuenta.
+     */
+    public function isEqualTo(UserInterface $user): bool
+    {
+        if (!$user instanceof self) {
+            return false;
+        }
+
+        return $this->getStatus() === $user->getStatus()
+            && $this->getUserIdentifier() === $user->getUserIdentifier();
     }
 }

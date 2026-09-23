@@ -2,6 +2,8 @@
 
 namespace App\Repository;
 
+use App\Entity\AuditableInterface;
+use App\Entity\Rol;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -67,5 +69,25 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
 
         return array_column($filas, 'dni');
+    }
+
+    /**
+     * Administradores activos, sin contar a uno. Se usa para no dejar el sistema
+     * sin nadie que pueda administrarlo.
+     */
+    public function countAdministradoresActivos(int $excluyendoId): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(DISTINCT u.id)')
+            ->join('u.usuarioRoles', 'ur')
+            ->join('ur.rol', 'rol')
+            ->andWhere('rol.codigo = :codigo')
+            ->andWhere('u.status = :activo')
+            ->andWhere('u.id != :excluido')
+            ->setParameter('codigo', Rol::CODIGO_ADMINISTRADOR)
+            ->setParameter('activo', AuditableInterface::STATUS_ACTIVO)
+            ->setParameter('excluido', $excluyendoId)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

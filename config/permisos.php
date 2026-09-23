@@ -85,6 +85,7 @@ return [
         'usuarios.ver'    => ['nombre' => 'Ver usuarios',                'roles' => []],
         'usuarios.crear'  => ['nombre' => 'Crear usuarios',              'roles' => []],
         'usuarios.editar' => ['nombre' => 'Editar usuarios y su acceso', 'roles' => []],
+        'usuarios.eliminar' => ['nombre' => 'Dar de baja y reactivar usuarios', 'descripcion' => 'La baja es logica: el usuario no puede entrar mas, pero su historial de ventas y reservas queda intacto.', 'roles' => []],
     ],
 
     'Roles' => [
