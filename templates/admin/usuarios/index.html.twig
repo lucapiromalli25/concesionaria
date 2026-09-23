@@ -162,5 +162,16 @@
         </div>
         <div data-remote-dialog-target="content"></div>
     </dialog>
+
+    <dialog data-confirm-action-target="dialog" class="modal max-w-sm">
+        <div class="px-5 py-4">
+            <h3 class="font-semibold">Confirmar</h3>
+            <p class="mt-1.5 text-sm text-muted" data-confirm-action-target="message"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" data-action="confirm-action#close" class="btn-secondary btn-sm">Cancelar</button>
+            <button type="button" data-action="confirm-action#confirm" data-confirm-action-target="submit" class="btn-danger btn-sm"></button>
+        </div>
+    </dialog>
 </div>
 {% endblock %}
