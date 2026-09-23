@@ -41,6 +41,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: produccion
     steps:
+      - uses: actions/checkout@v4
+
       - name: Configurar clave SSH
         run: |
           mkdir -p ~/.ssh
@@ -48,8 +50,11 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
+      # El script se manda por stdin en vez de ejecutarlo desde el server: en el
+      # primer deploy todavia no existe alla, y asi siempre corre la version del
+      # commit que se esta desplegando.
       - name: Ejecutar deploy
         run: |
           ssh -i ~/.ssh/deploy_key -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "bash \$HOME/domains/atilioautomotores.com/public_html/concesionaria/bin/deploy.sh"
+            'bash -s' < bin/deploy.sh
